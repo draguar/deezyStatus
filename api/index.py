@@ -14,9 +14,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-handler = logging.StreamHandler(sys.stdout)
+handler = logging.StreamHandler(sys.stdout) 
 
-logger.addHandler(handler)
 
 # Use the logger to log messages
 logger.info('This is an info message')
