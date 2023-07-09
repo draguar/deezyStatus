@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-handler = logging.StreamHandler(sys.stdout) 
+handler = logging.StreamHandler(stream=sys.stdout) 
 
 
 # Use the logger to log messages
