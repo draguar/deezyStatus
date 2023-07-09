@@ -10,24 +10,6 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 import logging
 
-logging.info("loading environment variables")
-
-DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
-DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
-SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
-SLACK_USER_TOKEN = os.environ.get("SLACK_USER_TOKEN")
-SLACK_APP_TOKEN = os.environ.get("SLACK_APP_TOKEN")
-PROJECT_URI  = os.environ.get("PROJECT_URI")
-deezer_access_tokens = {}
-
-# Initializes your app with your bot token and signing secret
-logging.info("Initializing slack app")
-slack_app = App(
-    token=os.environ.get("SLACK_BOT_TOKEN"),
-    signing_secret=os.environ.get("SLACK_SIGNING_SECRET")
-)
-slack_client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
-slack_request_handler = SlackRequestHandler(app=slack_app)
 
 deezer_app = Flask(__name__)
 
