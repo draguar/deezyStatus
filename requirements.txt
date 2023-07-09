@@ -1,1 +1,6 @@
 Flask==2.2.2
+os
+requests
+slack_bolt
+slack_sdk
+logging
