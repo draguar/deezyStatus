@@ -10,9 +10,6 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 import logging
 
-# Get the root logger
-logger = logging.getLogger()
-
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
 DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
@@ -90,11 +87,11 @@ def slack_events():
 def update_home_view (user_id, event=None):
     authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}/deezyRedirect?slack_id={user_id}"
     if user_id in deezer_access_tokens:
-        logger.info("User already associated with a deezer acces_token")
+        logging.info("User already associated with a deezer acces_token")
         message_text = "Deezer is connected"
         button_text = "Connect to another Deezer account"
     else:
-        logger.info("User already associated with a deezer acces_token")
+        logging.info("User already associated with a deezer acces_token")
         message_text = "Welcome to DeezyStatus. To start syncing your status with the tracks you listen to on Deezer, click on 'Connect to Deezer' below."
         button_text = "Connect to Deezer"
     view={
@@ -133,7 +130,7 @@ def update_home_view (user_id, event=None):
 
         if "view" in event:
             # Update the existing view on the Home tab
-            logger.info("Updating the existing view on the Home tab")
+            logging.info("Updating the existing view on the Home tab")
             response = slack_client.views_update(
                 user_id=user_id,
                 view_id=event["view"]["id"],
@@ -141,17 +138,17 @@ def update_home_view (user_id, event=None):
             )
         else:
             # Publish the initial view on the Home tab
-            logger.info("Publishing the view on the Home tab")
+            logging.info("Publishing the view on the Home tab")
             response = slack_client.views_publish(
                 user_id=user_id,
                 view=view
             )
         if response["ok"]:
-            logger.info("Successfully published the app home view")
+            logging.info("Successfully published the app home view")
         else:
-            logger.error("Failed to publish the app home view")
+            logging.error("Failed to publish the app home view")
     except Exception as e:
-        logger.error(f"Error publishing the app home view: {str(e)}")
+        logging.error(f"Error publishing the app home view: {str(e)}")
 
 
 # Start your Bolt app using Socket Mode
