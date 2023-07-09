@@ -10,6 +10,8 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 import logging
 
+logging.info("loading environment variables")
+
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
 DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
@@ -19,19 +21,19 @@ PROJECT_URI  = os.environ.get("PROJECT_URI")
 deezer_access_tokens = {}
 
 # Initializes your app with your bot token and signing secret
+logging.info("Initializing slack app")
 slack_app = App(
     token=os.environ.get("SLACK_BOT_TOKEN"),
     signing_secret=os.environ.get("SLACK_SIGNING_SECRET")
 )
 slack_client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
-
-
 slack_request_handler = SlackRequestHandler(app=slack_app)
 
 deezer_app = Flask(__name__)
 
 @deezer_app.route('/')
 def hello_world():
+    logging.info("Request received at /")
     return "hey"
 
 @deezer_app.route("/deezyRedirect")
