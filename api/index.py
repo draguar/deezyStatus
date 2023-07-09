@@ -9,6 +9,20 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 import logging
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+logger.addHandler(handler)
+
+# Use the logger to log messages
+logger.info('This is an info message')
+logger.error('This is an error message')
+
+
 logging.info("loading environment variables")
 
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
