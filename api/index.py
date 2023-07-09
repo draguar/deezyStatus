@@ -45,7 +45,7 @@ deezer_app = Flask(__name__)
 @deezer_app.route('/')
 def hello_world():
     authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&redirect_uri={PROJECT_URI}/deezyRedirect&perms=listening_history,offline_access"
-    return redirect(authorization_url)
+    return authorization_url
 
 @deezer_app.route("/deezyRedirect")
 def callback():
