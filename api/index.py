@@ -1,19 +1,11 @@
+from flask import Flask
 
-# A very simple Flask Hello World app for you to get started with...
+app = Flask(__name__)
 
-from flask import Flask, redirect, request, jsonify
+@app.route('/')
+def home():
+    return 'Hello, World!'
 
-
-
-deezer_app = Flask(__name__)
-
-@deezer_app.route('/')
-def hello_world():
-    return "hey"
-
-
-
-
-
-
-
+@app.route('/about')
+def about():
+    return 'About'
