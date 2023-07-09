@@ -91,8 +91,8 @@ def update_home_view (user_id, event=None):
         message_text = "Deezer is connected"
         button_text = "Connect to another Deezer account"
     else:
-        logging.info("User already associated with a deezer acces_token")
-        message_text = "Welcome to DeezyStatus. To start syncing your status with the tracks you listen to on Deezer, click on 'Connect to Deezer' below."
+        logging.info("User not associated with a deezer acces_token")
+        message_text = "Welcome to DeezyStatus ;). To start syncing your status with the tracks you listen to on Deezer, click on 'Connect to Deezer' below."
         button_text = "Connect to Deezer"
     view={
             "type": "home",
