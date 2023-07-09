@@ -5,7 +5,6 @@ from flask import Flask, redirect, request, jsonify
 import os
 import requests
 from slack_bolt import App
-from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 import logging
@@ -16,7 +15,6 @@ DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
 DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_USER_TOKEN = os.environ.get("SLACK_USER_TOKEN")
-SLACK_APP_TOKEN = os.environ.get("SLACK_APP_TOKEN")
 PROJECT_URI  = os.environ.get("PROJECT_URI")
 deezer_access_tokens = {}
 
@@ -34,7 +32,7 @@ app = Flask(__name__)
 @app.route('/')
 def hello_world():
     logging.info("Request received at /")
-    return "hey"
+    return PROJECT_URI
 
 @app.route("/deezyRedirect")
 def callback():
@@ -87,7 +85,7 @@ def slack_events():
     return ""
 
 def update_home_view (user_id, event=None):
-    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri=what/deezyRedirect?slack_id={user_id}"
+    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}/deezyRedirect?slack_id={user_id}"
     if user_id in deezer_access_tokens:
         logging.info("User already associated with a deezer acces_token")
         message_text = "Deezer is connected"
@@ -151,15 +149,5 @@ def update_home_view (user_id, event=None):
             logging.error("Failed to publish the app home view")
     except Exception as e:
         logging.error(f"Error publishing the app home view: {str(e)}")
-
-
-# Start your Bolt app using Socket Mode
-if __name__ == "__main__":
-    # Start the SocketModeHandler in the main thread
-    handler = SocketModeHandler(slack_app, app_token=os.environ.get("SLACK_APP_TOKEN"))
-    handler.start()
-
-
-
 
 
