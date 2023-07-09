@@ -10,17 +10,8 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 import logging
 
-log_file = '/var/log/draguar.pythonanywhere.com.error.log'
-
-# Configure the root logger
-logging.basicConfig(filename=log_file, level=logging.DEBUG)
-
 # Get the root logger
 logger = logging.getLogger()
-
-# Add a handler to send logs to the error log file
-handler = logging.FileHandler(log_file)
-logger.addHandler(handler)
 
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
 DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
