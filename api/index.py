@@ -27,7 +27,7 @@ DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_USER_TOKEN = os.environ.get("SLACK_USER_TOKEN")
 SLACK_APP_TOKEN = os.environ.get("SLACK_APP_TOKEN")
-PROJET_URI  = os.environ.get("PROJET_URI")
+PROJECT_URI  = os.environ.get("PROJECT_URI")
 deezer_access_tokens = {}
 
 # Initializes your app with your bot token and signing secret
@@ -44,7 +44,7 @@ deezer_app = Flask(__name__)
 
 @deezer_app.route('/')
 def hello_world():
-    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&redirect_uri={PROJET_URI}/deezyRedirect&perms=listening_history,offline_access"
+    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&redirect_uri={PROJECT_URI}/deezyRedirect&perms=listening_history,offline_access"
     return redirect(authorization_url)
 
 @deezer_app.route("/deezyRedirect")
@@ -98,7 +98,7 @@ def slack_events():
     return ""
 
 def update_home_view (user_id, event=None):
-    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJET_URI}/deezyRedirect?slack_id={user_id}"
+    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}/deezyRedirect?slack_id={user_id}"
     if user_id in deezer_access_tokens:
         logger.info("User already associated with a deezer acces_token")
         message_text = "Deezer is connected"
