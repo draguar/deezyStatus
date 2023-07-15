@@ -5,23 +5,19 @@ from flask import Flask, redirect, request, jsonify
 import os
 import requests
 from slack_bolt import App
-from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 import logging
-
-logging.info("loading environment variables")
+import sys
 
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
 DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_USER_TOKEN = os.environ.get("SLACK_USER_TOKEN")
-SLACK_APP_TOKEN = os.environ.get("SLACK_APP_TOKEN")
 PROJECT_URI  = os.environ.get("PROJECT_URI")
 deezer_access_tokens = {}
 
 # Initializes your app with your bot token and signing secret
-logging.info("Initializing slack app")
 slack_app = App(
     token=os.environ.get("SLACK_BOT_TOKEN"),
     signing_secret=os.environ.get("SLACK_SIGNING_SECRET")
@@ -30,11 +26,13 @@ slack_client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
 slack_request_handler = SlackRequestHandler(app=slack_app)
 
 app = Flask(__name__)
+app.logger.setLevel(logging.INFO)
+
 
 @app.route('/')
 def hello_world():
-    logging.info("Request received at /")
-    return "hey"
+    app.logger.info("Request received at /")
+    return PROJECT_URI
 
 @app.route("/deezyRedirect")
 def callback():
@@ -89,12 +87,12 @@ def slack_events():
 def update_home_view (user_id, event=None):
     authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}/deezyRedirect?slack_id={user_id}"
     if user_id in deezer_access_tokens:
-        logging.info("User already associated with a deezer acces_token")
+        app.logger.info("User already associated with a deezer acces_token")
         message_text = "Deezer is connected"
         button_text = "Connect to another Deezer account"
     else:
-        logging.info("User already associated with a deezer acces_token")
-        message_text = "Welcome to DeezyStatus. To start syncing your status with the tracks you listen to on Deezer, click on 'Connect to Deezer' below."
+        app.logger.info("User not associated with a deezer acces_token")
+        message_text = "Welcome to DeezyStatus ;). To start syncing your status with the tracks you listen to on Deezer, click on 'Connect to Deezer' below."
         button_text = "Connect to Deezer"
     view={
             "type": "home",
@@ -132,7 +130,7 @@ def update_home_view (user_id, event=None):
 
         if "view" in event:
             # Update the existing view on the Home tab
-            logging.info("Updating the existing view on the Home tab")
+            app.logger.info("Updating the existing view on the Home tab")
             response = slack_client.views_update(
                 user_id=user_id,
                 view_id=event["view"]["id"],
@@ -140,26 +138,16 @@ def update_home_view (user_id, event=None):
             )
         else:
             # Publish the initial view on the Home tab
-            logging.info("Publishing the view on the Home tab")
+            app.logger.info("Publishing the view on the Home tab")
             response = slack_client.views_publish(
                 user_id=user_id,
                 view=view
             )
         if response["ok"]:
-            logging.info("Successfully published the app home view")
+            app.logger.info("Successfully published the app home view")
         else:
-            logging.error("Failed to publish the app home view")
+            app.logger.error("Failed to publish the app home view")
     except Exception as e:
-        logging.error(f"Error publishing the app home view: {str(e)}")
-
-
-# Start your Bolt app using Socket Mode
-if __name__ == "__main__":
-    # Start the SocketModeHandler in the main thread
-    handler = SocketModeHandler(slack_app, app_token=os.environ.get("SLACK_APP_TOKEN"))
-    handler.start()
-
-
-
+        app.logger.error(f"Error publishing the app home view: {str(e)}")
 
 
