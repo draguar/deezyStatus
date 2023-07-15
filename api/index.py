@@ -30,6 +30,7 @@ app = Flask(__name__)
 @app.route('/')
 def hello_world():
     app.logger.info("Request received at /")
+    app.logger.error("Request received at /")
     return PROJECT_URI
 
 @app.route("/deezyRedirect")
