@@ -3,7 +3,7 @@
 
 from flask import Flask, redirect, request, jsonify
 import os
-import requests
+import requests, json
 from slack_bolt import App
 from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
@@ -19,10 +19,10 @@ deezer_access_tokens = {}
 
 # Initializes your app with your bot token and signing secret
 slack_app = App(
-    token=os.environ.get("SLACK_BOT_TOKEN"),
+    token=SLACK_BOT_TOKEN,
     signing_secret=os.environ.get("SLACK_SIGNING_SECRET")
 )
-slack_client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
+slack_client = WebClient(SLACK_BOT_TOKEN)
 slack_request_handler = SlackRequestHandler(app=slack_app)
 
 app = Flask(__name__)
@@ -76,48 +76,71 @@ def hello():
 def update_home_tab(client, event, logger):
   try:
     # views.publish is the method that your app uses to push a view to the Home tab
-    client.views_publish(
-      # the user that opened your app's app home
-      user_id=event["user"],
-      # the view object that appears in the app home
-      view={
-        "type": "home",
-        "callback_id": "home_view",
-
-        # body of the view
-        "blocks": [
-          {
-            "type": "section",
-            "text": {
-              "type": "mrkdwn",
-              "text": "*Welcome to your _App's Home_* :tada:"
-            }
-          },
-          {
-            "type": "divider"
-          },
-          {
-            "type": "section",
-            "text": {
-              "type": "mrkdwn",
-              "text": "This button won't do much for now but you can set up a listener for it using the `actions()` method and passing its unique `action_id`. See an example in the `examples` folder within your Bolt app."
-            }
-          },
-          {
-            "type": "actions",
-            "elements": [
-              {
-                "type": "button",
-                "text": {
-                  "type": "plain_text",
-                  "text": "Click me!"
+    publish_url = "https://slack.com/api/views.publish"
+    header = {'content-type':'application/json'}
+    parameters = {
+        "token": SLACK_BOT_TOKEN,
+        "user_id": event["user"],      # <--- This is my problem
+        "view": json.dumps({
+            "type": "home",
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "Welcome to *Survey Analyzer*! ..."
+                    }
                 }
-              }
-            ]
-          }
-        ]
-      }
-    )
+              ]
+            })
+        }
+    app.logger.info("sending ome update request")
+
+    r = requests.post(publish_url, params=parameters, headers=header)
+    app.logger.info(r.text)
+
+    # client.views_publish(
+      # # the user that opened your app's app home
+      # user_id=event["user"],
+      # # the view object that appears in the app home
+      # view={
+        # "type": "home",
+        # "callback_id": "home_view",
+
+        # # body of the view
+        # "blocks": [
+          # {
+            # "type": "section",
+            # "text": {
+              # "type": "mrkdwn",
+              # "text": "*Welcome to your _App's Home_* :tada:"
+            # }
+          # },
+          # {
+            # "type": "divider"
+          # },
+          # {
+            # "type": "section",
+            # "text": {
+              # "type": "mrkdwn",
+              # "text": "This button won't do much for now but you can set up a listener for it using the `actions()` method and passing its unique `action_id`. See an example in the `examples` folder within your Bolt app."
+            # }
+          # },
+          # {
+            # "type": "actions",
+            # "elements": [
+              # {
+                # "type": "button",
+                # "text": {
+                  # "type": "plain_text",
+                  # "text": "Click me!"
+                # }
+              # }
+            # ]
+          # }
+        # ]
+      # }
+    # )
     app.logger.info("home tab updated")
 
   except Exception as e:
