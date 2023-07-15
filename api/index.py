@@ -31,8 +31,7 @@ app = Flask(__name__)
 def hello_world():
     app.logger.info("Request received at /")
     app.logger.error("Request received at /")
-    app.logger.setLevel(logging.ERROR)
-
+    app.logger.setLevel(logging.INFO)
     # Test Log levels
     app.logger.debug("debug log info")
     app.logger.info("Info log information")
