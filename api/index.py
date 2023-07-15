@@ -9,6 +9,7 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 import logging
 import sys
+import datetime
 
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
 DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
@@ -112,7 +113,7 @@ def update_home_tab(client, event, logger):
                 "type": "button",
                 "text": {
                   "type": "plain_text",
-                  "text": "Click me!"
+                  "text": "Click me!" + datetime.datetime.now()
                 }
               }
             ]
