@@ -41,10 +41,20 @@ slack_client = WebClient(token=os.environ.get("SLACK_BOT_TOKEN"))
 slack_request_handler = SlackRequestHandler(app=slack_app)
 
 app = Flask(__name__)
+app.logger.debug("debug log info")
+app.logger.info("Info log information")
+app.logger.warning("Warning log info")
+app.logger.error("Error log info")
+app.logger.critical("Critical log info")
 
 @app.route('/')
 def hello_world():
     logging.info("Request received at /")
+    app.logger.debug("debug log info")
+    app.logger.info("Info log information")
+    app.logger.warning("Warning log info")
+    app.logger.error("Error log info")
+    app.logger.critical("Critical log info")
     return PROJECT_URI
 
 @app.route("/deezyRedirect")
