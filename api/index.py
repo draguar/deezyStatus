@@ -46,7 +46,7 @@ def callback():
     state_uuid=request.args.get("state")
     app.logger.info(f"got deezer redirect with uuid: {state_uuid}. dict is {str(uuid_to_slackID)}")
 
-    user_id = uuid_to_slackID[state_uuid]
+    user_id = uuid_to_slackID[uuid.UUID(state_uuid)]
 
     # Exchange the authorization code for an access token
     response = requests.get(
