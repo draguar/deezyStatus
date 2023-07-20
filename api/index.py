@@ -42,8 +42,8 @@ def hello_world():
 def callback():
     # Retrieve the authorization code from the query parameters
     authorization_code = request.args.get("code")
-    state_uuide=request.args.get("slack_id")
-    user_id = uuid_to_slackID[state_uuide]
+    state_uuid=request.args.get("state")
+    user_id = uuid_to_slackID[state_uuid]
 
     # Exchange the authorization code for an access token
     response = requests.get(
