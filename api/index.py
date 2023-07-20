@@ -41,8 +41,11 @@ def hello_world():
 @app.route("/deezyRedirect")
 def callback():
     # Retrieve the authorization code from the query parameters
+    
     authorization_code = request.args.get("code")
     state_uuid=request.args.get("state")
+    app.logger.info(f"got deezer redirect with uuid: {state_uuid}. dict is {str(uuid_to_slackID)}")
+
     user_id = uuid_to_slackID[state_uuid]
 
     # Exchange the authorization code for an access token
@@ -149,7 +152,8 @@ def update_home_view (user_id, event=None):
         state_uuid=slackId_to_uuid[user_id]
     else:
         state_uuid=uuid.uuid1()
-        uuid_to_slackID[state_uuid]=user_id     
+        uuid_to_slackID[state_uuid]=user_id  
+    app.logger.info(f"making deezer request with uuid: {state_uuid} correspondinf to user_id {uuid_to_slackID[state_uuid]} same as {user_id}")
     authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}deezyRedirect&state={state_uuid}"
     if user_id in deezer_access_tokens:
         app.logger.info("User already associated with a deezer acces_token")
