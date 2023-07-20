@@ -141,7 +141,7 @@ def slack_events():
     return ""
 
 def update_home_view (user_id, event=None):
-    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}/deezyRedirect?slack_id={user_id}"
+    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}deezyRedirect?slack_id={user_id}"
     if user_id in deezer_access_tokens:
         app.logger.info("User already associated with a deezer acces_token")
         message_text = "Deezer is connected"
