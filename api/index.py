@@ -9,6 +9,7 @@ from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 import logging
 import sys
+import uuid
 import datetime
 
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
@@ -17,6 +18,7 @@ SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_USER_TOKEN = os.environ.get("SLACK_USER_TOKEN")
 PROJECT_URI  = os.environ.get("PROJECT_URI")
 deezer_access_tokens = {}
+uuid_to_slackID={}
 
 # Initializes your app with your bot token and signing secret
 slack_app = App(
@@ -39,8 +41,12 @@ def hello_world():
 @app.route("/deezyRedirect")
 def callback():
     # Retrieve the authorization code from the query parameters
+    
     authorization_code = request.args.get("code")
-    user_id = request.args.get("slack_id")
+    state_uuid=request.args.get("state")
+    app.logger.info(f"got deezer redirect with uuid: {state_uuid}. dict is {str(uuid_to_slackID)}")
+
+    user_id = uuid_to_slackID[uuid.UUID(state_uuid)]
 
     # Exchange the authorization code for an access token
     response = requests.get(
@@ -70,63 +76,10 @@ def hello():
     return "hello"
 
 
-# @slack_app.event("app_home_opened")
-# def handle_app_home_opened(event, client, logger):
-    # user_id = event["user"]
-    # update_home_view (user_id, event)
 @slack_app.event("app_home_opened")
-def update_home_tab(client, event, logger):
-  try:
-    # views.publish is the method that your app uses to push a view to the Home tab
-  
-    client.views_publish(
-      # the user that opened your app's app home
-      user_id=event["user"],
-      # the view object that appears in the app home
-      view={
-        "type": "home",
-        "callback_id": "home_view",
-
-        # body of the view
-        "blocks": [
-          {
-            "type": "section",
-            "text": {
-              "type": "mrkdwn",
-              "text": "*Welcome to your _App's Home_* :tada:"
-            }
-          },
-          {
-            "type": "divider"
-          },
-          {
-            "type": "section",
-            "text": {
-              "type": "mrkdwn",
-              "text": "This button won't do much for now but you can set up a listener for it using the `actions()` method and passing its unique `action_id`. See an example in the `examples` folder within your Bolt app."
-            }
-          },
-          {
-            "type": "actions",
-            "elements": [
-              {
-                "type": "button",
-                "text": {
-                  "type": "plain_text",
-                  "text": "Click me!" + str(datetime.datetime.now())
-                }
-              }
-            ]
-          }
-        ]
-      }
-    )
-    app.logger.info("home tab updated")
-
-  except Exception as e:
-    app.logger.error(f"Error publishing home tab: {e}")
-
-
+def handle_app_home_opened(event, client, logger):
+    user_id = event["user"]
+    update_home_view (user_id, event)
 
 @app.route('/slack/events', methods=['POST'])
 def slack_events():
@@ -137,7 +90,15 @@ def slack_events():
     return ""
 
 def update_home_view (user_id, event=None):
-    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}/deezyRedirect?slack_id={user_id}"
+    slackId_to_uuid = {v: k for k, v in uuid_to_slackID.items()}
+    if user_id in slackId_to_uuid:
+        state_uuid=slackId_to_uuid[user_id]
+    else:
+        state_uuid=uuid.uuid1()
+        uuid_to_slackID[state_uuid]=user_id  
+    app.logger.info("making deezer request with uuid: %s correspondinf to user_id %s same as %s",state_uuid, uuid_to_slackID[state_uuid], user_id)
+    app.logger.info("troll")
+    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}deezyRedirect&state={state_uuid}"
     if user_id in deezer_access_tokens:
         app.logger.info("User already associated with a deezer acces_token")
         message_text = "Deezer is connected"
@@ -173,28 +134,12 @@ def update_home_view (user_id, event=None):
         }
 
     try:
-        if event is None:
-            # Get the current app home view ID
-            event = slack_client.views_open(
-                trigger_id="dummy_trigger_id",
-                view={"type": "home"}
-            )
-
-        if "view" in event:
-            # Update the existing view on the Home tab
-            app.logger.info("Updating the existing view on the Home tab")
-            response = slack_client.views_update(
-                user_id=user_id,
-                view_id=event["view"]["id"],
-                view=view
-            )
-        else:
-            # Publish the initial view on the Home tab
-            app.logger.info("Publishing the view on the Home tab")
-            response = slack_client.views_publish(
-                user_id=user_id,
-                view=view
-            )
+        # Publish the initial view on the Home tab
+        app.logger.info("Publishing the view on the Home tab")
+        response = slack_client.views_publish(
+            user_id=user_id,
+            view=view
+        )
         if response["ok"]:
             app.logger.info("Successfully published the app home view")
         else:
