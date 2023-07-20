@@ -80,63 +80,6 @@ def hello():
 def handle_app_home_opened(event, client, logger):
     user_id = event["user"]
     update_home_view (user_id, event)
-    
-    
-    
-    
-@slack_app.event("app_home_opened")
-def update_home_tab(client, event, logger):
-  try:
-    # views.publish is the method that your app uses to push a view to the Home tab
-  
-    client.views_publish(
-      # the user that opened your app's app home
-      user_id=event["user"],
-      # the view object that appears in the app home
-      view={
-        "type": "home",
-        "callback_id": "home_view",
-
-        # body of the view
-        "blocks": [
-          {
-            "type": "section",
-            "text": {
-              "type": "mrkdwn",
-              "text": "*Welcome to your _App's Home_* :tada:"
-            }
-          },
-          {
-            "type": "divider"
-          },
-          {
-            "type": "section",
-            "text": {
-              "type": "mrkdwn",
-              "text": "This button won't do much for now but you can set up a listener for it using the `actions()` method and passing its unique `action_id`. See an example in the `examples` folder within your Bolt app."
-            }
-          },
-          {
-            "type": "actions",
-            "elements": [
-              {
-                "type": "button",
-                "text": {
-                  "type": "plain_text",
-                  "text": "Click me!" + str(datetime.datetime.now())
-                }
-              }
-            ]
-          }
-        ]
-      }
-    )
-    app.logger.info("home tab updated")
-
-  except Exception as e:
-    app.logger.error(f"Error publishing home tab: {e}")
-
-
 
 @app.route('/slack/events', methods=['POST'])
 def slack_events():
@@ -153,7 +96,8 @@ def update_home_view (user_id, event=None):
     else:
         state_uuid=uuid.uuid1()
         uuid_to_slackID[state_uuid]=user_id  
-    app.logger.info(f"making deezer request with uuid: {state_uuid} correspondinf to user_id {uuid_to_slackID[state_uuid]} same as {user_id}")
+    app.logger.info("making deezer request with uuid: %s correspondinf to user_id %s same as %s",state_uuid, uuid_to_slackID[state_uuid], user_id)
+    app.logger.info("troll")
     authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}deezyRedirect&state={state_uuid}"
     if user_id in deezer_access_tokens:
         app.logger.info("User already associated with a deezer acces_token")
