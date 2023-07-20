@@ -70,10 +70,14 @@ def hello():
     return "hello"
 
 
-# @slack_app.event("app_home_opened")
-# def handle_app_home_opened(event, client, logger):
-    # user_id = event["user"]
-    # update_home_view (user_id, event)
+@slack_app.event("app_home_opened")
+def handle_app_home_opened(event, client, logger):
+    user_id = event["user"]
+    update_home_view (user_id, event)
+    
+    
+    
+    
 @slack_app.event("app_home_opened")
 def update_home_tab(client, event, logger):
   try:
@@ -173,28 +177,12 @@ def update_home_view (user_id, event=None):
         }
 
     try:
-        if event is None:
-            # Get the current app home view ID
-            event = slack_client.views_open(
-                trigger_id="dummy_trigger_id",
-                view={"type": "home"}
-            )
-
-        if "view" in event:
-            # Update the existing view on the Home tab
-            app.logger.info("Updating the existing view on the Home tab")
-            response = slack_client.views_update(
-                user_id=user_id,
-                view_id=event["view"]["id"],
-                view=view
-            )
-        else:
-            # Publish the initial view on the Home tab
-            app.logger.info("Publishing the view on the Home tab")
-            response = slack_client.views_publish(
-                user_id=user_id,
-                view=view
-            )
+        # Publish the initial view on the Home tab
+        app.logger.info("Publishing the view on the Home tab")
+        response = slack_client.views_publish(
+            user_id=user_id,
+            view=view
+        )
         if response["ok"]:
             app.logger.info("Successfully published the app home view")
         else:
