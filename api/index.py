@@ -43,6 +43,10 @@ def fetch_current_track():
             response_data = response.json()
             if "data" in response_data:
                 current_track = response_data["data"][0]
+                seconds_ago = (datetime.now() - datetime.fromtimestamp(current_track['timestamp'])).seconds
+                # if track was started more than twice its duration ago, we don't consider it currently playing
+                if seconds_ago < (2*current_track['duration']):
+                    update_slack_status(current_track['title'], current_track['artist']['name'], slack_id)
                 return f"Currently listening to: {current_track['title']} by {current_track['artist']['name']}, duration {current_track['duration']} started {(datetime.now() - datetime.fromtimestamp(current_track['timestamp'])).seconds}s ago "
             else:
                 return f"No track is currently playing. slack_user{slack_id}, deezer_token {deezer_token}"
@@ -51,6 +55,29 @@ def fetch_current_track():
             print(f"Error getting track information: {e}")
             return "Error getting track information."
     return "No user connected."
+    
+def update_slack_status(trackname, artist, slack_id):
+    emoji = ":musical_note:"  # Emoji to use for the status
+    status_text = f"listening to: {trackname} - {artist}"
+    
+    slack_client = WebClient(token=SLACK_USER_TOKEN)
+
+    try:
+        response = slack_client.users_profile_set(
+            user=slack_id,
+            profile={
+                "status_text": status_text,
+                "status_emoji": emoji
+            }
+        )
+        if response["ok"]:
+            print(f"Slack status updated for user {slack_id}.")
+        else:
+            print(f"Failed to update Slack status for user {slack_id}.")
+    except SlackApiError as e:
+        print(f"Error updating Slack status: {e}")
+
+
 
 @app.route('/')
 def hello_world():
