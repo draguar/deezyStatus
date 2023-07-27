@@ -37,6 +37,7 @@ app.logger.setLevel(logging.INFO)
 
 @app.route('/cronjob')
 def fetch_current_track():
+    return_value = ""
     for slack_id, deezer_token in deezer_access_tokens.items():
         try:
             response = requests.get(DEEZER_API_BASE_URL + "?access_token=" + deezer_token)
@@ -44,24 +45,23 @@ def fetch_current_track():
             if "data" in response_data:
                 current_track = response_data["data"][0]
                 seconds_ago = (datetime.now() - datetime.fromtimestamp(current_track['timestamp'])).seconds
-                # if track was started more than twice its duration ago, we don't consider it currently playing
-                if seconds_ago < (2*current_track['duration']):
-                    update_slack_status(current_track['title'], current_track['artist']['name'], slack_id)
-                return f"Currently listening to: {current_track['title']} by {current_track['artist']['name']}, duration {current_track['duration']} started {(datetime.now() - datetime.fromtimestamp(current_track['timestamp'])).seconds}s ago "
-            else:
-                return f"No track is currently playing. slack_user{slack_id}, deezer_token {deezer_token}"
+                # if track was started more than 5 minutes ago, we reset default status, otherwise we update it
+                if seconds_ago > 5*60:
+                    update_slack_status("","",slack_id)
+                    return_value += "user " + slack_id + "isn't listening to deezer\n"
+                else:
+                    status_text = f"listening to: {current_track['title']} - {current_track['artist']['name']}"
+                    update_slack_status(":musical_note:" , status_text, slack_id)
+                    return_value += "user " + slack_id +" "+ status_text +"\n"
+
 
         except requests.exceptions.RequestException as e:
             print(f"Error getting track information: {e}")
             return "Error getting track information."
-    return "No user connected."
+    return return_value + "no other users connected."
     
-def update_slack_status(trackname, artist, slack_id):
-    emoji = ":musical_note:"  # Emoji to use for the status
-    status_text = f"listening to: {trackname} - {artist}"
-    
+def update_slack_status(emoji, status_text, slack_id):   
     slack_client = WebClient(token=SLACK_USER_TOKEN)
-
     try:
         response = slack_client.users_profile_set(
             user=slack_id,
@@ -76,8 +76,6 @@ def update_slack_status(trackname, artist, slack_id):
             print(f"Failed to update Slack status for user {slack_id}.")
     except SlackApiError as e:
         print(f"Error updating Slack status: {e}")
-
-
 
 @app.route('/')
 def hello_world():
