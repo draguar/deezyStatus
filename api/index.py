@@ -10,13 +10,19 @@ from slack_sdk import WebClient
 import logging
 import sys
 import uuid
-import datetime
+from datetime import datetime
+
 
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
 DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_USER_TOKEN = os.environ.get("SLACK_USER_TOKEN")
 PROJECT_URI  = os.environ.get("PROJECT_URI")
+CRONJOB_API_KEY = os.environ.get("CRONJOB_API_KEY")
+CRONJOB_ID = os.environ.get("CRONJOB_ID")
+DEEZER_API_BASE_URL = "https://api.deezer.com/user/me/history"
+CRONJOB_API_BASE_URL = 'https://api.cron-job.org'
+
 deezer_access_tokens = {}
 uuid_to_slackID={}
 
@@ -32,11 +38,81 @@ slack_request_handler = SlackRequestHandler(app=slack_app)
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 
+@app.route('/cronjob')
+def fetch_current_track():
+    return_value = ""
+    if len(deezer_access_tokens) == 0:
+        update_conjob(enabled=False)
+        return "no user connected, stopped cronjob"
+    for slack_id, deezer_token in deezer_access_tokens.items():
+        try:
+            response = requests.get(DEEZER_API_BASE_URL + "?access_token=" + deezer_token)
+            response_data = response.json()
+            if "data" in response_data:
+                current_track = response_data["data"][0]
+                seconds_ago = (datetime.now() - datetime.fromtimestamp(current_track['timestamp'])).seconds
+                # if track was started more than 5 minutes ago, we reset default status, otherwise we update it
+                if seconds_ago > 5*60:
+                    update_slack_status("","",slack_id)
+                    return_value += "user " + slack_id + " isn't listening to deezer since : " + seconds_ago +"s \n"
+                else:
+                    status_text = f"listening to: {current_track['title']} - {current_track['artist']['name']}"
+                    update_slack_status(":musical_note:" , status_text, slack_id)
+                    return_value += "user " + slack_id +" "+ status_text +"\n"
+
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error getting track information: {e}")
+            return "Error getting track information."
+    return return_value
+    
+@app.route('/stopcronjob')
+def stop_cronjob():
+    return update_conjob(False)
+    
+@app.route('/startcronjob')
+def start_cronjob():
+    return update_conjob(True)
+
+    
+def update_conjob(enabled):
+    url = f"{CRONJOB_API_BASE_URL}/jobs/{CRONJOB_ID}"
+    headers = {
+        "Authorization": f"Bearer {CRONJOB_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    data = {"job": {"enabled": enabled}}
+    response = requests.patch(url, headers=headers, json=data)
+    if response.status_code == 200:
+        return "updated cronjob"
+    else : 
+        return "error updating cronjob"
+    
+def update_slack_status(emoji, status_text, slack_id):   
+    slack_client = WebClient(token=SLACK_USER_TOKEN)
+    try:
+        response = slack_client.users_profile_set(
+            user=slack_id,
+            profile={
+                "status_text": status_text,
+                "status_emoji": emoji
+            }
+        )
+        if response["ok"]:
+            print(f"Slack status updated for user {slack_id}.")
+        else:
+            print(f"Failed to update Slack status for user {slack_id}.")
+    except SlackApiError as e:
+        print(f"Error updating Slack status: {e}")
 
 @app.route('/')
 def hello_world():
     app.logger.info("Request received at /")
-    return PROJECT_URI
+    headers = {
+        'Authorization': 'Bearer '+ CRONJOB_API_KEY
+    }
+    result = requests.get(CRONJOB_API_BASE_URL + '/jobs', headers=headers)
+    return result.json()
 
 @app.route("/deezyRedirect")
 def callback():
