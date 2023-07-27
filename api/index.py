@@ -12,6 +12,7 @@ import sys
 import uuid
 import datetime
 
+
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
 DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
@@ -37,19 +38,14 @@ app.logger.setLevel(logging.INFO)
 @app.route('/cronjob')
 def fetch_current_track():
     for slack_id, deezer_token in deezer_access_tokens.items():
-        headers = {
-            "Authorization": f"Bearer {deezer_token}"
-        }
-
         try:
-            response = requests.get(DEEZER_API_BASE_URL, headers=headers)
+            response = requests.get(DEEZER_API_BASE_URL + "?access_token=" + deezer_token)
             response_data = response.json()
             return response_data
 
-            if "track" in response_data:
-                current_track = response_data["track"]["title"]
-                artist_name = response_data["track"]["artist"]["name"]
-                return f"Currently listening to: {current_track} by {artist_name}"
+            if "data" in response_data:
+                current_track = response_data["data"][0]
+                return f"Currently listening to: {current_track['title']} by {current_track['artist']['name']}, duration {current_track['duration']} started {datetime.now() - datetime.fromtimestamp(current_track['timestamp'])}s ago "
             else:
                 return f"No track is currently playing. slack_user{slack_id}, deezer_token {deezer_token}"
 
