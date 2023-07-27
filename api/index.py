@@ -61,6 +61,8 @@ def fetch_current_track():
 @app.route('/')
 def hello_world():
     app.logger.info("Request received at /")
+    for slack_id, deezer_token in deezer_access_tokens.items():
+    return deezer_token
     return PROJECT_URI
 
 @app.route("/deezyRedirect")
