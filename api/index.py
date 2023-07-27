@@ -83,7 +83,10 @@ def update_conjob(enabled):
     }
     data = {"job": {"enabled": enabled}}
     response = requests.patch(url, headers=headers, json=data)
-    return response.status_code == 200
+    if response.status_code == 200:
+        return "updated cronjob"
+    else : 
+        return "error updating cronjob"
     
 def update_slack_status(emoji, status_text, slack_id):   
     slack_client = WebClient(token=SLACK_USER_TOKEN)
