@@ -17,6 +17,8 @@ DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_USER_TOKEN = os.environ.get("SLACK_USER_TOKEN")
 PROJECT_URI  = os.environ.get("PROJECT_URI")
+DEEZER_API_BASE_URL = "https://api.deezer.com/user/me"
+
 deezer_access_tokens = {}
 uuid_to_slackID={}
 
@@ -32,6 +34,27 @@ slack_request_handler = SlackRequestHandler(app=slack_app)
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 
+@app.route('/cronjob')
+def fetch_current_track():
+    for slack_id, deezer_token in deezer_access_tokens.items():
+        headers = {
+            "Authorization": f"Bearer {deezer_token}"
+        }
+
+        try:
+            response = requests.get(DEEZER_API_BASE_URL, headers=headers)
+            response_data = response.json()
+
+            if "track" in response_data:
+                current_track = response_data["track"]["title"]
+                artist_name = response_data["track"]["artist"]["name"]
+                return f"Currently listening to: {current_track} by {artist_name}"
+            else:
+                return "No track is currently playing."
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error getting track information: {e}")
+            return "Error getting track information."
 
 @app.route('/')
 def hello_world():
