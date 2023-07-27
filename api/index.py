@@ -41,7 +41,7 @@ app.logger.setLevel(logging.INFO)
 @app.route('/cronjob')
 def fetch_current_track():
     return_value = ""
-    if len(deezer_access_tokens) = 0:
+    if len(deezer_access_tokens) == 0:
         update_conjob(enabled=False)
         return "no user connected, stopped cronjob"
     for slack_id, deezer_token in deezer_access_tokens.items():
