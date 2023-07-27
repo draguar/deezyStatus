@@ -41,8 +41,6 @@ def fetch_current_track():
         try:
             response = requests.get(DEEZER_API_BASE_URL + "?access_token=" + deezer_token)
             response_data = response.json()
-            return response_data
-
             if "data" in response_data:
                 current_track = response_data["data"][0]
                 return f"Currently listening to: {current_track['title']} by {current_track['artist']['name']}, duration {current_track['duration']} started {datetime.now() - datetime.fromtimestamp(current_track['timestamp'])}s ago "
