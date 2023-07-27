@@ -68,11 +68,11 @@ def fetch_current_track():
     
 @app.route('/stopcronjob')
 def stop_cronjob():
-    update_conjob(False)
+    return update_conjob(False)
     
 @app.route('/startcronjob')
 def start_cronjob():
-    update_conjob(True)
+    return update_conjob(True)
 
     
 def update_conjob(enabled):
