@@ -85,8 +85,7 @@ def hello_world():
     headers = {
         'Authorization': 'Bearer '+ CRONJOB_API_KEY
     }
-
-    result = requests.patch(CRONJOB_API_BASE_URL + '/jobs', headers=headers)
+    result = requests.get(CRONJOB_API_BASE_URL + '/jobs', headers=headers)
     return result.json()
 
 @app.route("/deezyRedirect")
