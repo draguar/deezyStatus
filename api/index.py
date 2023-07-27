@@ -10,7 +10,7 @@ from slack_sdk import WebClient
 import logging
 import sys
 import uuid
-import datetime
+from datetime import datetime
 
 
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
@@ -43,7 +43,7 @@ def fetch_current_track():
             response_data = response.json()
             if "data" in response_data:
                 current_track = response_data["data"][0]
-                return f"Currently listening to: {current_track['title']} by {current_track['artist']['name']}, duration {current_track['duration']} started {datetime.now() - datetime.fromtimestamp(current_track['timestamp'])}s ago "
+                return f"Currently listening to: {current_track['title']} by {current_track['artist']['name']}, duration {current_track['duration']} started {(datetime.now() - datetime.fromtimestamp(current_track['timestamp'])).seconds}s ago "
             else:
                 return f"No track is currently playing. slack_user{slack_id}, deezer_token {deezer_token}"
 
