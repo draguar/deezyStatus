@@ -17,7 +17,7 @@ DEEZER_CLIENT_SECRET = os.environ.get("DEEZER_CLIENT_SECRET")
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_USER_TOKEN = os.environ.get("SLACK_USER_TOKEN")
 PROJECT_URI  = os.environ.get("PROJECT_URI")
-DEEZER_API_BASE_URL = "https://api.deezer.com/user/me"
+DEEZER_API_BASE_URL = "https://api.deezer.com/user/me/history"
 
 deezer_access_tokens = {}
 uuid_to_slackID={}
@@ -44,17 +44,19 @@ def fetch_current_track():
         try:
             response = requests.get(DEEZER_API_BASE_URL, headers=headers)
             response_data = response.json()
+            return response_data
 
             if "track" in response_data:
                 current_track = response_data["track"]["title"]
                 artist_name = response_data["track"]["artist"]["name"]
                 return f"Currently listening to: {current_track} by {artist_name}"
             else:
-                return "No track is currently playing."
+                return f"No track is currently playing. slack_user{slack_id}, deezer_token {deezer_token}"
 
         except requests.exceptions.RequestException as e:
             print(f"Error getting track information: {e}")
             return "Error getting track information."
+    return "No user connected."
 
 @app.route('/')
 def hello_world():
