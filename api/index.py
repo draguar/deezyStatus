@@ -139,6 +139,8 @@ def callback():
     access_token = data.get("access_token")
     deezer_access_tokens[user_id] = access_token
     update_home_view (user_id)
+    update_conjob(enabled=True)
+
 
     return """<html>
             <body>
