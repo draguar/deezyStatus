@@ -11,6 +11,8 @@ import logging
 import sys
 import uuid
 from datetime import datetime
+from cryptography.fernet import Fernet
+
 
 
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
@@ -54,7 +56,7 @@ def fetch_current_track():
                 # if track was started more than 5 minutes ago, we reset default status, otherwise we update it
                 if seconds_ago > 5*60:
                     update_slack_status("","",slack_id)
-                    return_value += "user " + slack_id + " isn't listening to deezer since : " + seconds_ago +"s \n"
+                    return_value += "user " + str(slack_id) + " isn't listening to deezer since : " + str(seconds_ago) +"s \n"
                 else:
                     status_text = f"listening to: {current_track['title']} - {current_track['artist']['name']}"
                     update_slack_status(":musical_note:" , status_text, slack_id)
@@ -74,7 +76,19 @@ def stop_cronjob():
 def start_cronjob():
     return update_conjob(True)
 
-    
+@app.route('/slackstatus')
+def parse_slack_status_update_request():
+    emoji=request.args.get("emoji")
+    status_text=request.args.get("status_text")
+    user_token=request.args.get("user_token")
+    cipher = Fernet(ENCRYPTION_KEY)
+    # Convert the token back to encrypted data
+    encrypted_user_id = user_token.encode()
+    # Decrypt the user ID
+    user_id = cipher.decrypt(encrypted_user_id).decode()
+    update_slack_status(emoji, status_text, slack_id)
+
+ 
 def update_conjob(enabled):
     url = f"{CRONJOB_API_BASE_URL}/jobs/{CRONJOB_ID}"
     headers = {
@@ -168,23 +182,9 @@ def slack_events():
     return ""
 
 def update_home_view (user_id, event=None):
-    slackId_to_uuid = {v: k for k, v in uuid_to_slackID.items()}
-    if user_id in slackId_to_uuid:
-        state_uuid=slackId_to_uuid[user_id]
-    else:
-        state_uuid=uuid.uuid1()
-        uuid_to_slackID[state_uuid]=user_id  
-    app.logger.info("making deezer request with uuid: %s correspondinf to user_id %s same as %s",state_uuid, uuid_to_slackID[state_uuid], user_id)
-    app.logger.info("troll")
-    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}deezyRedirect&state={state_uuid}"
-    if user_id in deezer_access_tokens:
-        app.logger.info("User already associated with a deezer acces_token")
-        message_text = "Deezer is connected"
-        button_text = "Connect to another Deezer account"
-    else:
-        app.logger.info("User not associated with a deezer acces_token")
-        message_text = "Welcome to DeezyStatus ;). To start syncing your status with the tracks you listen to on Deezer, click on 'Connect to Deezer' below."
-        button_text = "Connect to Deezer"
+    cipher = Fernet(ENCRYPTION_KEY)
+    encrypted_user_id = cipher.encrypt(user_id.encode())
+    token = encrypted_user_id.decode()
     view={
             "type": "home",
             "blocks": [
@@ -192,24 +192,53 @@ def update_home_view (user_id, event=None):
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": message_text
+                        "text": "To use DeezyStatus, install chrome app DeezyTracker. Once you set DeezyTracker up and play music in Deezer, it will send current track information to DeezyStatus in order to update you slack status.\n\nTo set up DeezyTracker, please copy paste your following user token: "+ token
                     }
-                },
-                {
-                    "type": "actions",
-                    "elements": [
-                        {
-                            "type": "button",
-                            "text": {
-                                "type": "plain_text",
-                                "text": button_text
-                            },
-                            "url": authorization_url
-                        }
-                    ]
                 }
             ]
         }
+    # slackId_to_uuid = {v: k for k, v in uuid_to_slackID.items()}
+    # if user_id in slackId_to_uuid:
+        # state_uuid=slackId_to_uuid[user_id]
+    # else:
+        # state_uuid=uuid.uuid1()
+        # uuid_to_slackID[state_uuid]=user_id  
+    # app.logger.info("making deezer request with uuid: %s correspondinf to user_id %s same as %s",state_uuid, uuid_to_slackID[state_uuid], user_id)
+    # app.logger.info("troll")
+    # authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}deezyRedirect&state={state_uuid}"
+    # if user_id in deezer_access_tokens:
+        # app.logger.info("User already associated with a deezer acces_token")
+        # message_text = "Deezer is connected"
+        # button_text = "Connect to another Deezer account"
+    # else:
+        # app.logger.info("User not associated with a deezer acces_token")
+        # message_text = "Welcome to DeezyStatus ;). To start syncing your status with the tracks you listen to on Deezer, click on 'Connect to Deezer' below."
+        # button_text = "Connect to Deezer"
+    # view={
+            # "type": "home",
+            # "blocks": [
+                # {
+                    # "type": "section",
+                    # "text": {
+                        # "type": "mrkdwn",
+                        # "text": message_text
+                    # }
+                # },
+                # {
+                    # "type": "actions",
+                    # "elements": [
+                        # {
+                            # "type": "button",
+                            # "text": {
+                                # "type": "plain_text",
+                                # "text": button_text
+                            # },
+                            # "url": authorization_url
+                        # }
+                    # ]
+                # }
+            # ]
+        # }
 
     try:
         # Publish the initial view on the Home tab
