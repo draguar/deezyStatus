@@ -56,11 +56,6 @@ def create_database():
     ''')
     conn.commit()
     conn.close()
-    
-try:
-    create_database()
-except Exception as e:
-    app.logger.error(e)
 
 def get_user_token(user_id):
     # Retrieve the user token from the database based on the token
@@ -134,6 +129,10 @@ def update_slack_status(emoji, status_text, slack_id):
 @app.route('/')
 def hello_world():
     app.logger.info("Request received at /")
+    try:
+        create_database()
+    except Exception as e:
+        app.logger.error(e)
     conn = sqlite3.connect('slack_tokens.db')
     return str(conn)
 
