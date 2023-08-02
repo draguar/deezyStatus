@@ -68,7 +68,7 @@ def store_user_id_token_pair(user_id, user_token):
     if response.status_code == 200:
         app.logger.info("User ID and token pair stored successfully.")
     else:
-        app.logger.error("Error storing user ID and token pair:", response.status_code)
+        app.logger.error("Error storing user ID and token pair: " + str(response.status_code))
         app.logger.error(response.text)
         
 def get_user_token_by_user_id(user_id):
@@ -89,7 +89,7 @@ def get_user_token_by_user_id(user_id):
         user_token = response.json().get('value')
         return user_token
     else:
-        app.logger.error("Error retrieving user token:", response.status_code)
+        app.logger.error("Error retrieving user token:" + str(response.status_code))
         app.logger.error(response.text)
         return None
         
@@ -119,7 +119,7 @@ def get_user_id_by_user_token(user_token):
         # If user token not found in the KV store, return None
         return None
     else:
-        app.logger.error("Error retrieving data from KV store:", response.status_code)
+        app.logger.error("Error retrieving data from KV store:" + str(response.status_code))
         app.logger.error(response.text)
         return None        
         
