@@ -153,7 +153,7 @@ def slack_events():
 
 def update_home_view (user_id, event=None):
     user_token=get_user_token(user_id)
-    if not user_token{
+    if not user_token:
         app.logger.info("generate a new user token for user : " + str(user_id))
         cipher = Fernet(ENCRYPTION_KEY)
         encrypted_user_id = cipher.encrypt(user_id.encode())
@@ -164,7 +164,6 @@ def update_home_view (user_id, event=None):
         cursor.execute('INSERT INTO users (user_id, user_token) VALUES (?, ?)', (user_id, user_token))
         conn.commit()
         conn.close()
-    }
     
     view={
             "type": "home",
