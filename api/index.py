@@ -80,7 +80,7 @@ def stop_cronjob():
 def start_cronjob():
     return update_conjob(True)
 
-@app.route('/slackstatus')
+@app.route('/slackstatus', methods=['POST'])
 def parse_slack_status_update_request():
     emoji=request.args.get("emoji")
     status_text=request.args.get("status_text")
