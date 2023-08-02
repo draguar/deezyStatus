@@ -50,11 +50,8 @@ app.logger.setLevel(logging.INFO)
 CORS(app, resources={r"/slackstatus": {"origins": "https://www.deezer.com"}})
 
 def store_user_id_token_pair(user_id, user_token):
-    # The key will be the user ID, and the value will be the user token
-    data = {user_id: user_token}
-
     # Construct the URL to the KV store
-    kv_store_url = f"{KV_REST_API_URL}/v1/namespaces/{KV_URL}/values"
+    kv_store_url = f"{KV_REST_API_URL}/set/{user_id}/{user_token}"
 
     # Set up the headers with the API token
     headers = {
@@ -63,7 +60,7 @@ def store_user_id_token_pair(user_id, user_token):
     }
 
     # Make the POST request to store the data in the KV store
-    response = requests.post(kv_store_url, json=data, headers=headers)
+    response = requests.post(kv_store_url, headers=headers)
 
     if response.status_code == 200:
         app.logger.info("User ID and token pair stored successfully.")
@@ -71,10 +68,24 @@ def store_user_id_token_pair(user_id, user_token):
         app.logger.error("Error storing user ID and token pair: " + str(response.status_code))
         app.logger.error(response.text)
         
-def get_user_token_by_user_id(user_id):
+    # same in opposite direction
+    # Construct the URL to the KV store
+    kv_opposite_url = f"{KV_REST_API_URL}/set/{user_token}/{user_id}"
+    # Make the POST request to store the data in the KV store
+    response = requests.post(kv_opposite_url, headers=headers)
+
+    if response.status_code == 200:
+        app.logger.info("User token and ID pair stored successfully.")
+    else:
+        app.logger.error("Error storing user ID and token pair: " + str(response.status_code))
+        app.logger.error(response.text)
+        
+        
+        
+def get_user_token_or_user_id(user_key):
 
     # Construct the URL to the KV store with the user ID as the key
-    kv_store_url = f"{KV_REST_API_URL}/v1/namespaces/{KV_URL}/values/{user_id}"
+    kv_store_url = f"{KV_REST_API_URL}/get/{user_key}"
 
     # Set up the headers with the read-only token
     headers = {
@@ -86,42 +97,44 @@ def get_user_token_by_user_id(user_id):
 
     if response.status_code == 200:
         # Parse the response JSON to get the user token
-        user_token = response.json().get('value')
-        return user_token
+        app.logger.info(response.text)
+        user_value = response.json().get('value')
+        
+        return user_value
     else:
-        app.logger.error("Error retrieving user token:" + str(response.status_code))
+        app.logger.error("Error retrieving user value:" + str(response.status_code))
         app.logger.error(response.text)
         return None
         
-def get_user_id_by_user_token(user_token):
+# def get_user_id_by_user_token(user_token):
 
-    # Construct the URL to the KV store
-    kv_store_url = f"{KV_REST_API_URL}/v1/namespaces/{KV_URL}/values"
+    # # Construct the URL to the KV store
+    # kv_store_url = f"{KV_REST_API_URL}/v1/namespaces/{KV_URL}/values"
 
-    # Set up the headers with the read-only token
-    headers = {
-        "Authorization": f"Bearer {KV_REST_API_READ_ONLY_TOKEN}",
-    }
+    # # Set up the headers with the read-only token
+    # headers = {
+        # "Authorization": f"Bearer {KV_REST_API_READ_ONLY_TOKEN}",
+    # }
 
-    # Make the GET request to retrieve all data from the KV store
-    response = requests.get(kv_store_url, headers=headers)
+    # # Make the GET request to retrieve all data from the KV store
+    # response = requests.get(kv_store_url, headers=headers)
 
-    if response.status_code == 200:
-        # Parse the response JSON to get all the keys and values in the KV store
-        kv_data = response.json().get('data', [])
+    # if response.status_code == 200:
+        # # Parse the response JSON to get all the keys and values in the KV store
+        # kv_data = response.json().get('data', [])
 
-        # Loop through the data to find the user ID associated with the provided user token
-        for item in kv_data:
-            if item['value'] == user_token:
-                user_id = item['key']
-                return user_id
+        # # Loop through the data to find the user ID associated with the provided user token
+        # for item in kv_data:
+            # if item['value'] == user_token:
+                # user_id = item['key']
+                # return user_id
 
-        # If user token not found in the KV store, return None
-        return None
-    else:
-        app.logger.error("Error retrieving data from KV store:" + str(response.status_code))
-        app.logger.error(response.text)
-        return None        
+        # # If user token not found in the KV store, return None
+        # return None
+    # else:
+        # app.logger.error("Error retrieving data from KV store:" + str(response.status_code))
+        # app.logger.error(response.text)
+        # return None        
         
 
 # def create_database():
@@ -176,7 +189,7 @@ def parse_slack_status_update_request():
         return jsonify({"error": "Missing required data"}), 400
         
     # get user ID from token
-    slack_id=get_user_id_by_user_token(user_token)
+    slack_id=get_user_token_or_user_id(user_token)
     if slack_id is None:
         return jsonify({"error": "Failed to decrypt user ID"}), 400
     update_slack_status(emoji, status_text, slack_id)
@@ -214,7 +227,24 @@ def hello_world():
     # except Exception as e:
         # app.logger.error(e)
     # conn = sqlite3.connect('slack_tokens.db')
-    return "hey"
+    
+    # Construct the URL to the KV store
+    kv_store_url = f"{KV_REST_API_URL}/keys/*"
+
+    # Set up the headers with the read-only token
+    headers = {
+        "Authorization": f"Bearer {KV_REST_API_READ_ONLY_TOKEN}",
+    }
+
+    # Make the GET request to retrieve all data from the KV store
+    response = requests.get(kv_store_url, headers=headers)
+
+    if response.status_code == 200:
+        # Parse the response JSON to get all the keys and values in the KV store
+        app.logger.info(response.text)
+        kv_data = response.json().get('data', [])
+        return str(kv_data)
+    return "response status: "+str(response.status_code)
 
 
 
@@ -232,7 +262,7 @@ def slack_events():
     return ""
 
 def update_home_view (user_id, event=None):
-    user_token=get_user_token_by_user_id(user_id)
+    user_token=get_user_token_or_user_id(user_id)
     if user_token is None:
         app.logger.info("generate a new user token for user : " + str(user_id))
         cipher = Fernet(ENCRYPTION_KEY)
