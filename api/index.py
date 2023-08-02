@@ -98,7 +98,7 @@ def get_user_token_or_user_id(user_key):
     if response.status_code == 200:
         # Parse the response JSON to get the user token
         app.logger.info(response.text)
-        user_value = response.json().get('value')
+        user_value = response.json().get('result')
         
         return user_value
     else:
