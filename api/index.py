@@ -255,6 +255,12 @@ def handle_app_home_opened(event, client, logger):
     user_id = event["user"]
     update_home_view (user_id, event)
 
+@app.route('/redis')
+def redis_test():
+    get_user_token_or_user_id("test")
+    return "ok"
+
+
 @app.route('/slack/events', methods=['POST'])
 def slack_events():
     if "challenge" in request.json:
