@@ -11,6 +11,11 @@ import logging
 import sys
 import uuid
 from datetime import datetime
+from cryptography.fernet import Fernet
+from flask_cors import CORS
+import sqlite3
+
+
 
 
 DEEZER_CLIENT_ID = os.environ.get("DEEZER_CLIENT_ID")
@@ -20,6 +25,11 @@ SLACK_USER_TOKEN = os.environ.get("SLACK_USER_TOKEN")
 PROJECT_URI  = os.environ.get("PROJECT_URI")
 CRONJOB_API_KEY = os.environ.get("CRONJOB_API_KEY")
 CRONJOB_ID = os.environ.get("CRONJOB_ID")
+ENCRYPTION_KEY=os.environ.get("ENCRYPTION_KEY")
+KV_URL=os.environ.get("KV_URL")
+KV_REST_API_URL=os.environ.get("KV_REST_API_URL")
+KV_REST_API_TOKEN=os.environ.get("KV_REST_API_TOKEN")
+KV_REST_API_READ_ONLY_TOKEN=os.environ.get("KV_REST_API_READ_ONLY_TOKEN")
 DEEZER_API_BASE_URL = "https://api.deezer.com/user/me/history"
 CRONJOB_API_BASE_URL = 'https://api.cron-job.org'
 
@@ -37,56 +47,160 @@ slack_request_handler = SlackRequestHandler(app=slack_app)
 
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
+CORS(app, resources={r"/slackstatus": {"origins": "https://www.deezer.com"}})
 
-@app.route('/cronjob')
-def fetch_current_track():
-    return_value = ""
-    if len(deezer_access_tokens) == 0:
-        update_conjob(enabled=False)
-        return "no user connected, stopped cronjob"
-    for slack_id, deezer_token in deezer_access_tokens.items():
-        try:
-            response = requests.get(DEEZER_API_BASE_URL + "?access_token=" + deezer_token)
-            response_data = response.json()
-            if "data" in response_data:
-                current_track = response_data["data"][0]
-                seconds_ago = (datetime.now() - datetime.fromtimestamp(current_track['timestamp'])).seconds
-                # if track was started more than 5 minutes ago, we reset default status, otherwise we update it
-                if seconds_ago > 5*60:
-                    update_slack_status("","",slack_id)
-                    return_value += "user " + slack_id + " isn't listening to deezer since : " + seconds_ago +"s \n"
-                else:
-                    status_text = f"listening to: {current_track['title']} - {current_track['artist']['name']}"
-                    update_slack_status(":musical_note:" , status_text, slack_id)
-                    return_value += "user " + slack_id +" "+ status_text +"\n"
+def store_user_id_token_pair(user_id, user_token):
+    # Construct the URL to the KV store
+    kv_store_url = f"{KV_REST_API_URL}/set/{user_id}/{user_token}"
 
-
-        except requests.exceptions.RequestException as e:
-            print(f"Error getting track information: {e}")
-            return "Error getting track information."
-    return return_value
-    
-@app.route('/stopcronjob')
-def stop_cronjob():
-    return update_conjob(False)
-    
-@app.route('/startcronjob')
-def start_cronjob():
-    return update_conjob(True)
-
-    
-def update_conjob(enabled):
-    url = f"{CRONJOB_API_BASE_URL}/jobs/{CRONJOB_ID}"
+    # Set up the headers with the API token
     headers = {
-        "Authorization": f"Bearer {CRONJOB_API_KEY}",
+        "Authorization": f"Bearer {KV_REST_API_TOKEN}",
         "Content-Type": "application/json",
     }
-    data = {"job": {"enabled": enabled}}
-    response = requests.patch(url, headers=headers, json=data)
+
+    # Make the POST request to store the data in the KV store
+    response = requests.post(kv_store_url, headers=headers)
+
     if response.status_code == 200:
-        return "updated cronjob"
-    else : 
-        return "error updating cronjob"
+        app.logger.info("User ID and token pair stored successfully.")
+    else:
+        app.logger.error("Error storing user ID and token pair: " + str(response.status_code))
+        app.logger.error(response.text)
+        
+    # same in opposite direction
+    # Construct the URL to the KV store
+    kv_opposite_url = f"{KV_REST_API_URL}/set/{user_token}/{user_id}"
+    # Make the POST request to store the data in the KV store
+    response = requests.post(kv_opposite_url, headers=headers)
+
+    if response.status_code == 200:
+        app.logger.info("User token and ID pair stored successfully.")
+    else:
+        app.logger.error("Error storing user ID and token pair: " + str(response.status_code))
+        app.logger.error(response.text)
+        
+        
+        
+def get_user_token_or_user_id(user_key):
+
+    # Construct the URL to the KV store with the user ID as the key
+    kv_store_url = f"{KV_REST_API_URL}/get/{user_key}"
+
+    # Set up the headers with the read-only token
+    headers = {
+        "Authorization": f"Bearer {KV_REST_API_READ_ONLY_TOKEN}",
+    }
+
+    # Make the GET request to retrieve the data from the KV store
+    response = requests.get(kv_store_url, headers=headers)
+
+    if response.status_code == 200:
+        # Parse the response JSON to get the user token
+        app.logger.info(response.text)
+        user_value = response.json().get('result')
+        
+        return user_value
+    else:
+        app.logger.error("Error retrieving user value:" + str(response.status_code))
+        app.logger.error(response.text)
+        return None
+        
+# def get_user_id_by_user_token(user_token):
+
+    # # Construct the URL to the KV store
+    # kv_store_url = f"{KV_REST_API_URL}/v1/namespaces/{KV_URL}/values"
+
+    # # Set up the headers with the read-only token
+    # headers = {
+        # "Authorization": f"Bearer {KV_REST_API_READ_ONLY_TOKEN}",
+    # }
+
+    # # Make the GET request to retrieve all data from the KV store
+    # response = requests.get(kv_store_url, headers=headers)
+
+    # if response.status_code == 200:
+        # # Parse the response JSON to get all the keys and values in the KV store
+        # kv_data = response.json().get('data', [])
+
+        # # Loop through the data to find the user ID associated with the provided user token
+        # for item in kv_data:
+            # if item['value'] == user_token:
+                # user_id = item['key']
+                # return user_id
+
+        # # If user token not found in the KV store, return None
+        # return None
+    # else:
+        # app.logger.error("Error retrieving data from KV store:" + str(response.status_code))
+        # app.logger.error(response.text)
+        # return None        
+        
+
+# def create_database():
+    # conn = sqlite3.connect('slack_tokens.db')
+    # cursor = conn.cursor()
+    # cursor.execute('''
+        # CREATE TABLE IF NOT EXISTS users (
+            # user_id TEXT PRIMARY KEY,
+            # token TEXT NOT NULL
+        # )
+    # ''')
+    # conn.commit()
+    # conn.close()
+
+# def get_user_token(user_id):
+    # # Retrieve the user token from the database based on the token
+    # conn = sqlite3.connect('slack_tokens.db')
+    # cursor = conn.cursor()
+    # cursor.execute('SELECT token FROM users WHERE user_id = ?', (user_id,))
+    # result = cursor.fetchone()
+    # conn.close()
+
+    # if result:
+        # user_token = result[0]
+        # return user_token
+    # else:
+        # return False
+        
+# def get_user_id(user_token):
+    # # Retrieve the user token from the database based on the token
+    # conn = sqlite3.connect('slack_tokens.db')
+    # cursor = conn.cursor()
+    # cursor.execute('SELECT user_id FROM users WHERE token = ?', (user_token,))
+    # result = cursor.fetchone()
+    # conn.close()
+
+    # if result:
+        # user_id = result[0]
+        # return user_id
+    # else:
+        # return False
+
+@app.route('/slackstatus', methods=['POST'])
+def parse_slack_status_update_request():
+    # Retrieve data from the JSON request body
+    data = request.get_json()
+    app.logger.info(str(data))
+    if "emoji" not in data or "status_text" not in data or "user_token" not in data:
+        app.logger.error("Missing required data")
+        return jsonify({"error": "Missing required data"}), 400
+    emoji = data.get("emoji")
+    status_text = data.get("status_text")
+    user_token = data.get("user_token")
+    # get user ID from token
+    slack_id=get_user_token_or_user_id(user_token)
+    if slack_id is None:
+        app.logger.error("Failed to decrypt user ID")
+        return jsonify({"error": "Failed to decrypt user ID"}), 400
+    update_slack_status(emoji, status_text, slack_id)
+    # Return the response (make sure to include the CORS header in the response)
+    response_data = {
+        'message': 'Status update sent successfully',
+        # Add any other data you want to return to the client
+    }
+
+    return jsonify(response_data)
     
 def update_slack_status(emoji, status_text, slack_id):   
     slack_client = WebClient(token=SLACK_USER_TOKEN)
@@ -102,62 +216,51 @@ def update_slack_status(emoji, status_text, slack_id):
             print(f"Slack status updated for user {slack_id}.")
         else:
             print(f"Failed to update Slack status for user {slack_id}.")
-    except SlackApiError as e:
+    except slack_sdk.errors.SlackApiError as e:
         print(f"Error updating Slack status: {e}")
 
 @app.route('/')
 def hello_world():
     app.logger.info("Request received at /")
-    headers = {
-        'Authorization': 'Bearer '+ CRONJOB_API_KEY
-    }
-    result = requests.get(CRONJOB_API_BASE_URL + '/jobs', headers=headers)
-    return result.json()
-
-@app.route("/deezyRedirect")
-def callback():
-    # Retrieve the authorization code from the query parameters
+    # try:
+        # create_database()
+        # app.logger.info("database created")
+    # except Exception as e:
+        # app.logger.error(e)
+    # conn = sqlite3.connect('slack_tokens.db')
     
-    authorization_code = request.args.get("code")
-    state_uuid=request.args.get("state")
-    app.logger.info(f"got deezer redirect with uuid: {state_uuid}. dict is {str(uuid_to_slackID)}")
+    # Construct the URL to the KV store
+    kv_store_url = f"{KV_REST_API_URL}/keys/*"
 
-    user_id = uuid_to_slackID[uuid.UUID(state_uuid)]
-
-    # Exchange the authorization code for an access token
-    response = requests.get(
-        "https://connect.deezer.com/oauth/access_token.php",
-        params={
-            "app_id": DEEZER_CLIENT_ID,
-            "secret": DEEZER_CLIENT_SECRET,
-            "code": authorization_code,
-            "output": "json"
-        }
-    )
-    # Extract the access token from the response
-    data = response.json()
-    access_token = data.get("access_token")
-    deezer_access_tokens[user_id] = access_token
-    update_home_view (user_id)
-    update_conjob(enabled=True)
+    # Set up the headers with the read-only token
+    headers = {
+        "Authorization": f"Bearer {KV_REST_API_READ_ONLY_TOKEN}",
+    }
+    app.logger.info("Send request at " + kv_store_url)
 
 
-    return """<html>
-            <body>
-                <h1>Authorization Successful</h1>
-                <p>You can close this tab now.</p>
-            </body>
-            </html>"""
+    # Make the GET request to retrieve all data from the KV store
+    response = requests.get(kv_store_url, headers=headers)
+    app.logger.info(response.text)
 
-@app.route('/test')
-def hello():
-    return "hello"
+    if response.status_code == 200:
+        # Parse the response JSON to get all the keys and values in the KV store
+        kv_data = response.json().get('data', [])
+        return str(kv_data)
+    return "response status: "+str(response.status_code)
+
 
 
 @slack_app.event("app_home_opened")
 def handle_app_home_opened(event, client, logger):
     user_id = event["user"]
     update_home_view (user_id, event)
+
+@app.route('/redis')
+def redis_test():
+    get_user_token_or_user_id("test")
+    return "ok"
+
 
 @app.route('/slack/events', methods=['POST'])
 def slack_events():
@@ -168,23 +271,20 @@ def slack_events():
     return ""
 
 def update_home_view (user_id, event=None):
-    slackId_to_uuid = {v: k for k, v in uuid_to_slackID.items()}
-    if user_id in slackId_to_uuid:
-        state_uuid=slackId_to_uuid[user_id]
-    else:
-        state_uuid=uuid.uuid1()
-        uuid_to_slackID[state_uuid]=user_id  
-    app.logger.info("making deezer request with uuid: %s correspondinf to user_id %s same as %s",state_uuid, uuid_to_slackID[state_uuid], user_id)
-    app.logger.info("troll")
-    authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}deezyRedirect&state={state_uuid}"
-    if user_id in deezer_access_tokens:
-        app.logger.info("User already associated with a deezer acces_token")
-        message_text = "Deezer is connected"
-        button_text = "Connect to another Deezer account"
-    else:
-        app.logger.info("User not associated with a deezer acces_token")
-        message_text = "Welcome to DeezyStatus ;). To start syncing your status with the tracks you listen to on Deezer, click on 'Connect to Deezer' below."
-        button_text = "Connect to Deezer"
+    user_token=get_user_token_or_user_id(user_id)
+    if user_token is None:
+        app.logger.info("generate a new user token for user : " + str(user_id))
+        cipher = Fernet(ENCRYPTION_KEY)
+        encrypted_user_id = cipher.encrypt(user_id.encode())
+        user_token = encrypted_user_id.decode()
+        # Store the user ID and token in the database
+        # conn = sqlite3.connect('slack_tokens.db')
+        # cursor = conn.cursor()
+        # cursor.execute('INSERT INTO users (user_id, user_token) VALUES (?, ?)', (user_id, user_token))
+        # conn.commit()
+        # conn.close()
+        store_user_id_token_pair(user_id, user_token)
+    
     view={
             "type": "home",
             "blocks": [
@@ -192,25 +292,11 @@ def update_home_view (user_id, event=None):
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": message_text
+                        "text": "To use DeezyStatus, install chrome app DeezyTracker. Once you set DeezyTracker up and play music in Deezer, it will send current track information to DeezyStatus in order to update you slack status.\n\nTo set up DeezyTracker, please copy paste your following user token: "+ user_token
                     }
-                },
-                {
-                    "type": "actions",
-                    "elements": [
-                        {
-                            "type": "button",
-                            "text": {
-                                "type": "plain_text",
-                                "text": button_text
-                            },
-                            "url": authorization_url
-                        }
-                    ]
                 }
             ]
         }
-
     try:
         # Publish the initial view on the Home tab
         app.logger.info("Publishing the view on the Home tab")

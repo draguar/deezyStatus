@@ -2,3 +2,5 @@ Flask==2.2.2
 requests==2.31.0
 slack_bolt==1.18.0
 slack_sdk==3.21.3
+cryptography==41.0.3
+flask_cors==4.0.0

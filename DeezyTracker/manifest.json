@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "DeezyTracker",
+  "version": "1.0",
+  "description": "Track your Deezer music to use the DeezyStatus Slack App",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "https://deezy-status.vercel.app/*",
+    "https://*.deezer.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.deezer.com/*"],
+      "js": ["contentScript.js"],
+	  "run_at": "document_end"
+
+    }
+  ]
+}
