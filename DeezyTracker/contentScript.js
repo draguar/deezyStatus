@@ -1,5 +1,23 @@
 const SLACK_APP_URL = "https://deezy-status.vercel.app"; 
 
+function isFavorite(){
+	const trackActions = document.querySelector(".track-actions");
+	if (trackActions) {
+		const addToFavButton = trackActions.querySelector("svg[data-testid='HeartIcon']");
+		const removeFromFavButton = trackActions.querySelector("svg[data-testid='HeartFillIcon']");
+		if (addToFavButton) {
+		  console.log('Not favorite');
+		  return false;
+		} else if (removeFromFavButton) {
+		  console.log('Currently favorite');
+		  return true;
+		}
+    } else {
+		console.log('no trackActions');
+	}
+	throw new Error('Cannot detect if favorite or not');
+}
+
 function sendSlackStatus(emoji, status_text) {
 	console.log(emoji+ " "+ status_text);
 	chrome.storage.sync.get('slackToken', function (data) {
@@ -54,8 +72,9 @@ function logCurrentTrack() {
         console.log('Status: Paused');
 		sendSlackStatus("", "");
       } else if (pauseButton) {
-        console.log('Status: Playing');
-		sendSlackStatus(":musical_note:", "listening to: "+ track + " - " + artist);
+		const emoji = isFavorite() ? ":heart:" : ":musical_note:"; 
+        console.log('Status: Playing, favorite: '+isFavorite());
+		sendSlackStatus(emoji, "listening to: "+ track + " - " + artist);
       } else {
         console.log('Status: Unknown');
       }

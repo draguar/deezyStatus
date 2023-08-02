@@ -216,7 +216,7 @@ def update_slack_status(emoji, status_text, slack_id):
             print(f"Slack status updated for user {slack_id}.")
         else:
             print(f"Failed to update Slack status for user {slack_id}.")
-    except SlackApiError as e:
+    except slack_sdk.errors.SlackApiError as e:
         print(f"Error updating Slack status: {e}")
 
 @app.route('/')
