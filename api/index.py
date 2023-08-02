@@ -134,11 +134,8 @@ def update_slack_status(emoji, status_text, slack_id):
 @app.route('/')
 def hello_world():
     app.logger.info("Request received at /")
-    headers = {
-        'Authorization': 'Bearer '+ CRONJOB_API_KEY
-    }
-    result = requests.get(CRONJOB_API_BASE_URL + '/jobs', headers=headers)
-    return result.json()
+    conn = sqlite3.connect('slack_tokens.db')
+    return str(conn)
 
 
 
