@@ -235,13 +235,15 @@ def hello_world():
     headers = {
         "Authorization": f"Bearer {KV_REST_API_READ_ONLY_TOKEN}",
     }
+    app.logger.info("Send request at " + kv_store_url)
+
 
     # Make the GET request to retrieve all data from the KV store
     response = requests.get(kv_store_url, headers=headers)
+    app.logger.info(response.text)
 
     if response.status_code == 200:
         # Parse the response JSON to get all the keys and values in the KV store
-        app.logger.info(response.text)
         kv_data = response.json().get('data', [])
         return str(kv_data)
     return "response status: "+str(response.status_code)
