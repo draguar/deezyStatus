@@ -12,6 +12,8 @@ import sys
 import uuid
 from datetime import datetime
 from cryptography.fernet import Fernet
+from flask_cors import CORS
+
 
 
 
@@ -40,6 +42,7 @@ slack_request_handler = SlackRequestHandler(app=slack_app)
 
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
+CORS(app, resources={r"/slackstatus": {"origins": "https://www.deezer.com"}})
 
 @app.route('/cronjob')
 def fetch_current_track():
@@ -88,6 +91,13 @@ def parse_slack_status_update_request():
     # Decrypt the user ID
     user_id = cipher.decrypt(encrypted_user_id).decode()
     update_slack_status(emoji, status_text, slack_id)
+    # Return the response (make sure to include the CORS header in the response)
+    response_data = {
+        'message': 'Status update sent successfully',
+        # Add any other data you want to return to the client
+    }
+
+    return jsonify(response_data)
 
  
 def update_conjob(enabled):
