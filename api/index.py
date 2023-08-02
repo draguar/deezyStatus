@@ -82,14 +82,22 @@ def start_cronjob():
 
 @app.route('/slackstatus', methods=['POST'])
 def parse_slack_status_update_request():
-    emoji=request.args.get("emoji")
-    status_text=request.args.get("status_text")
-    user_token=request.args.get("user_token")
-    cipher = Fernet(ENCRYPTION_KEY)
-    # Convert the token back to encrypted data
-    encrypted_user_id = user_token.encode()
+    # Retrieve data from the JSON request body
+    data = request.get_json()
+    emoji = data.get("emoji")
+    status_text = data.get("status_text")
+    user_token = data.get("user_token")
+
+    if not all([emoji, status_text, user_token]):
+        return jsonify({"error": "Missing required data"}), 400
+        
     # Decrypt the user ID
-    user_id = cipher.decrypt(encrypted_user_id).decode()
+    cipher = Fernet(ENCRYPTION_KEY)
+    try:
+        encrypted_user_id = user_token.encode()
+        user_id = cipher.decrypt(encrypted_user_id).decode()
+    except Exception as e:
+        return jsonify({"error": "Failed to decrypt user ID"}), 400
     update_slack_status(emoji, status_text, slack_id)
     # Return the response (make sure to include the CORS header in the response)
     response_data = {
