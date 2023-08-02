@@ -13,6 +13,7 @@ import uuid
 from datetime import datetime
 from cryptography.fernet import Fernet
 from flask_cors import CORS
+import sqlite3
 
 
 
@@ -44,41 +45,46 @@ app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 CORS(app, resources={r"/slackstatus": {"origins": "https://www.deezer.com"}})
 
-@app.route('/cronjob')
-def fetch_current_track():
-    return_value = ""
-    if len(deezer_access_tokens) == 0:
-        update_conjob(enabled=False)
-        return "no user connected, stopped cronjob"
-    for slack_id, deezer_token in deezer_access_tokens.items():
-        try:
-            response = requests.get(DEEZER_API_BASE_URL + "?access_token=" + deezer_token)
-            response_data = response.json()
-            if "data" in response_data:
-                current_track = response_data["data"][0]
-                seconds_ago = (datetime.now() - datetime.fromtimestamp(current_track['timestamp'])).seconds
-                # if track was started more than 5 minutes ago, we reset default status, otherwise we update it
-                if seconds_ago > 5*60:
-                    update_slack_status("","",slack_id)
-                    return_value += "user " + str(slack_id) + " isn't listening to deezer since : " + str(seconds_ago) +"s \n"
-                else:
-                    status_text = f"listening to: {current_track['title']} - {current_track['artist']['name']}"
-                    update_slack_status(":musical_note:" , status_text, slack_id)
-                    return_value += "user " + slack_id +" "+ status_text +"\n"
+def create_database():
+    conn = sqlite3.connect('slack_tokens.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY,
+            token TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+create_database()
 
+def get_user_token(user_id):
+    # Retrieve the user token from the database based on the token
+    conn = sqlite3.connect('slack_tokens.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT token FROM users WHERE user_id = ?', (user_id,))
+    result = cursor.fetchone()
+    conn.close()
 
-        except requests.exceptions.RequestException as e:
-            print(f"Error getting track information: {e}")
-            return "Error getting track information."
-    return return_value
-    
-@app.route('/stopcronjob')
-def stop_cronjob():
-    return update_conjob(False)
-    
-@app.route('/startcronjob')
-def start_cronjob():
-    return update_conjob(True)
+    if result:
+        user_token = result[0]
+        return user_token
+    else:
+        return False
+        
+def get_user_id(user_token):
+    # Retrieve the user token from the database based on the token
+    conn = sqlite3.connect('slack_tokens.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT user_id FROM users WHERE token = ?', (user_token,))
+    result = cursor.fetchone()
+    conn.close()
+
+    if result:
+        user_id = result[0]
+        return user_id
+    else:
+        return False
 
 @app.route('/slackstatus', methods=['POST'])
 def parse_slack_status_update_request():
@@ -91,12 +97,9 @@ def parse_slack_status_update_request():
     if not all([emoji, status_text, user_token]):
         return jsonify({"error": "Missing required data"}), 400
         
-    # Decrypt the user ID
-    cipher = Fernet(ENCRYPTION_KEY)
-    try:
-        encrypted_user_id = user_token.encode()
-        user_id = cipher.decrypt(encrypted_user_id).decode()
-    except Exception as e:
+    # get user ID from token
+    slack_id=get_user_id(user_token)
+    if not slack_id:
         return jsonify({"error": "Failed to decrypt user ID"}), 400
     update_slack_status(emoji, status_text, slack_id)
     # Return the response (make sure to include the CORS header in the response)
@@ -106,20 +109,6 @@ def parse_slack_status_update_request():
     }
 
     return jsonify(response_data)
-
- 
-def update_conjob(enabled):
-    url = f"{CRONJOB_API_BASE_URL}/jobs/{CRONJOB_ID}"
-    headers = {
-        "Authorization": f"Bearer {CRONJOB_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    data = {"job": {"enabled": enabled}}
-    response = requests.patch(url, headers=headers, json=data)
-    if response.status_code == 200:
-        return "updated cronjob"
-    else : 
-        return "error updating cronjob"
     
 def update_slack_status(emoji, status_text, slack_id):   
     slack_client = WebClient(token=SLACK_USER_TOKEN)
@@ -147,44 +136,6 @@ def hello_world():
     result = requests.get(CRONJOB_API_BASE_URL + '/jobs', headers=headers)
     return result.json()
 
-@app.route("/deezyRedirect")
-def callback():
-    # Retrieve the authorization code from the query parameters
-    
-    authorization_code = request.args.get("code")
-    state_uuid=request.args.get("state")
-    app.logger.info(f"got deezer redirect with uuid: {state_uuid}. dict is {str(uuid_to_slackID)}")
-
-    user_id = uuid_to_slackID[uuid.UUID(state_uuid)]
-
-    # Exchange the authorization code for an access token
-    response = requests.get(
-        "https://connect.deezer.com/oauth/access_token.php",
-        params={
-            "app_id": DEEZER_CLIENT_ID,
-            "secret": DEEZER_CLIENT_SECRET,
-            "code": authorization_code,
-            "output": "json"
-        }
-    )
-    # Extract the access token from the response
-    data = response.json()
-    access_token = data.get("access_token")
-    deezer_access_tokens[user_id] = access_token
-    update_home_view (user_id)
-    update_conjob(enabled=True)
-
-
-    return """<html>
-            <body>
-                <h1>Authorization Successful</h1>
-                <p>You can close this tab now.</p>
-            </body>
-            </html>"""
-
-@app.route('/test')
-def hello():
-    return "hello"
 
 
 @slack_app.event("app_home_opened")
@@ -201,9 +152,20 @@ def slack_events():
     return ""
 
 def update_home_view (user_id, event=None):
-    cipher = Fernet(ENCRYPTION_KEY)
-    encrypted_user_id = cipher.encrypt(user_id.encode())
-    token = encrypted_user_id.decode()
+    user_token=get_user_token(user_id)
+    if not user_token{
+        app.logger.info("generate a new user token for user : " + str(user_id))
+        cipher = Fernet(ENCRYPTION_KEY)
+        encrypted_user_id = cipher.encrypt(user_id.encode())
+        user_token = encrypted_user_id.decode()
+        # Store the user ID and token in the database
+        conn = sqlite3.connect('slack_tokens.db')
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO users (user_id, user_token) VALUES (?, ?)', (user_id, user_token))
+        conn.commit()
+        conn.close()
+    }
+    
     view={
             "type": "home",
             "blocks": [
@@ -211,54 +173,11 @@ def update_home_view (user_id, event=None):
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": "To use DeezyStatus, install chrome app DeezyTracker. Once you set DeezyTracker up and play music in Deezer, it will send current track information to DeezyStatus in order to update you slack status.\n\nTo set up DeezyTracker, please copy paste your following user token: "+ token
+                        "text": "To use DeezyStatus, install chrome app DeezyTracker. Once you set DeezyTracker up and play music in Deezer, it will send current track information to DeezyStatus in order to update you slack status.\n\nTo set up DeezyTracker, please copy paste your following user token: "+ user_token
                     }
                 }
             ]
         }
-    # slackId_to_uuid = {v: k for k, v in uuid_to_slackID.items()}
-    # if user_id in slackId_to_uuid:
-        # state_uuid=slackId_to_uuid[user_id]
-    # else:
-        # state_uuid=uuid.uuid1()
-        # uuid_to_slackID[state_uuid]=user_id  
-    # app.logger.info("making deezer request with uuid: %s correspondinf to user_id %s same as %s",state_uuid, uuid_to_slackID[state_uuid], user_id)
-    # app.logger.info("troll")
-    # authorization_url = f"https://connect.deezer.com/oauth/auth.php?app_id={DEEZER_CLIENT_ID}&perms=listening_history,offline_access&redirect_uri={PROJECT_URI}deezyRedirect&state={state_uuid}"
-    # if user_id in deezer_access_tokens:
-        # app.logger.info("User already associated with a deezer acces_token")
-        # message_text = "Deezer is connected"
-        # button_text = "Connect to another Deezer account"
-    # else:
-        # app.logger.info("User not associated with a deezer acces_token")
-        # message_text = "Welcome to DeezyStatus ;). To start syncing your status with the tracks you listen to on Deezer, click on 'Connect to Deezer' below."
-        # button_text = "Connect to Deezer"
-    # view={
-            # "type": "home",
-            # "blocks": [
-                # {
-                    # "type": "section",
-                    # "text": {
-                        # "type": "mrkdwn",
-                        # "text": message_text
-                    # }
-                # },
-                # {
-                    # "type": "actions",
-                    # "elements": [
-                        # {
-                            # "type": "button",
-                            # "text": {
-                                # "type": "plain_text",
-                                # "text": button_text
-                            # },
-                            # "url": authorization_url
-                        # }
-                    # ]
-                # }
-            # ]
-        # }
-
     try:
         # Publish the initial view on the Home tab
         app.logger.info("Publishing the view on the Home tab")
