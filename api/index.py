@@ -22,6 +22,7 @@ SLACK_USER_TOKEN = os.environ.get("SLACK_USER_TOKEN")
 PROJECT_URI  = os.environ.get("PROJECT_URI")
 CRONJOB_API_KEY = os.environ.get("CRONJOB_API_KEY")
 CRONJOB_ID = os.environ.get("CRONJOB_ID")
+ENCRYPTION_KEY=os.environ.get("ENCRYPTION_KEY")
 DEEZER_API_BASE_URL = "https://api.deezer.com/user/me/history"
 CRONJOB_API_BASE_URL = 'https://api.cron-job.org'
 
