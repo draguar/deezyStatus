@@ -54,7 +54,7 @@ def store_user_id_token_pair(user_id, user_token):
     data = {user_id: user_token}
 
     # Construct the URL to the KV store
-    kv_store_url = f"{KV_URL}/v1/namespaces/{KV_REST_API_URL}/values"
+    kv_store_url = f"{KV_REST_API_URL}/v1/namespaces/{KV_URL}/values"
 
     # Set up the headers with the API token
     headers = {
@@ -74,7 +74,7 @@ def store_user_id_token_pair(user_id, user_token):
 def get_user_token_by_user_id(user_id):
 
     # Construct the URL to the KV store with the user ID as the key
-    kv_store_url = f"{KV_URL}/v1/namespaces/{KV_REST_API_URL}/values/{user_id}"
+    kv_store_url = f"{KV_REST_API_URL}/v1/namespaces/{KV_URL}/values/{user_id}"
 
     # Set up the headers with the read-only token
     headers = {
@@ -96,7 +96,7 @@ def get_user_token_by_user_id(user_id):
 def get_user_id_by_user_token(user_token):
 
     # Construct the URL to the KV store
-    kv_store_url = f"{KV_URL}/v1/namespaces/{KV_REST_API_URL}/values"
+    kv_store_url = f"{KV_REST_API_URL}/v1/namespaces/{KV_URL}/values"
 
     # Set up the headers with the read-only token
     headers = {
