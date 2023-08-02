@@ -181,16 +181,17 @@ def get_user_token_or_user_id(user_key):
 def parse_slack_status_update_request():
     # Retrieve data from the JSON request body
     data = request.get_json()
+    app.logger.info(str(data))
+    if "emoji" not in data or "status_text" not in data or "user_token" not in data:
+        app.logger.error("Missing required data")
+        return jsonify({"error": "Missing required data"}), 400
     emoji = data.get("emoji")
     status_text = data.get("status_text")
     user_token = data.get("user_token")
-
-    if not all([emoji, status_text, user_token]):
-        return jsonify({"error": "Missing required data"}), 400
-        
     # get user ID from token
     slack_id=get_user_token_or_user_id(user_token)
     if slack_id is None:
+        app.logger.error("Failed to decrypt user ID")
         return jsonify({"error": "Failed to decrypt user ID"}), 400
     update_slack_status(emoji, status_text, slack_id)
     # Return the response (make sure to include the CORS header in the response)
