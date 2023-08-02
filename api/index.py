@@ -26,6 +26,10 @@ PROJECT_URI  = os.environ.get("PROJECT_URI")
 CRONJOB_API_KEY = os.environ.get("CRONJOB_API_KEY")
 CRONJOB_ID = os.environ.get("CRONJOB_ID")
 ENCRYPTION_KEY=os.environ.get("ENCRYPTION_KEY")
+KV_URL=os.environ.get("KV_URL")
+KV_REST_API_URL=os.environ.get("KV_REST_API_URL")
+KV_REST_API_TOKEN=os.environ.get("KV_REST_API_TOKEN")
+KV_REST_API_READ_ONLY_TOKEN=os.environ.get("KV_REST_API_READ_ONLY_TOKEN")
 DEEZER_API_BASE_URL = "https://api.deezer.com/user/me/history"
 CRONJOB_API_BASE_URL = 'https://api.cron-job.org'
 
@@ -45,45 +49,120 @@ app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 CORS(app, resources={r"/slackstatus": {"origins": "https://www.deezer.com"}})
 
-def create_database():
-    conn = sqlite3.connect('slack_tokens.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            user_id TEXT PRIMARY KEY,
-            token TEXT NOT NULL
-        )
-    ''')
-    conn.commit()
-    conn.close()
+def store_user_id_token_pair(user_id, user_token):
+    # The key will be the user ID, and the value will be the user token
+    data = {user_id: user_token}
 
-def get_user_token(user_id):
-    # Retrieve the user token from the database based on the token
-    conn = sqlite3.connect('slack_tokens.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT token FROM users WHERE user_id = ?', (user_id,))
-    result = cursor.fetchone()
-    conn.close()
+    # Construct the URL to the KV store
+    kv_store_url = f"{KV_URL}/v1/namespaces/{KV_REST_API_URL}/values"
 
-    if result:
-        user_token = result[0]
+    # Set up the headers with the API token
+    headers = {
+        "Authorization": f"Bearer {KV_REST_API_TOKEN}",
+        "Content-Type": "application/json",
+    }
+
+    # Make the POST request to store the data in the KV store
+    response = requests.post(kv_store_url, json=data, headers=headers)
+
+    if response.status_code == 200:
+        app.logger.info("User ID and token pair stored successfully.")
+    else:
+        app.logger.error("Error storing user ID and token pair:", response.status_code)
+        app.logger.error(response.text)
+        
+def get_user_token_by_user_id(user_id):
+
+    # Construct the URL to the KV store with the user ID as the key
+    kv_store_url = f"{KV_URL}/v1/namespaces/{KV_REST_API_URL}/values/{user_id}"
+
+    # Set up the headers with the read-only token
+    headers = {
+        "Authorization": f"Bearer {KV_REST_API_READ_ONLY_TOKEN}",
+    }
+
+    # Make the GET request to retrieve the data from the KV store
+    response = requests.get(kv_store_url, headers=headers)
+
+    if response.status_code == 200:
+        # Parse the response JSON to get the user token
+        user_token = response.json().get('value')
         return user_token
     else:
-        return False
+        app.logger.error("Error retrieving user token:", response.status_code)
+        app.logger.error(response.text)
+        return None
         
-def get_user_id(user_token):
-    # Retrieve the user token from the database based on the token
-    conn = sqlite3.connect('slack_tokens.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT user_id FROM users WHERE token = ?', (user_token,))
-    result = cursor.fetchone()
-    conn.close()
+def get_user_id_by_user_token(user_token):
 
-    if result:
-        user_id = result[0]
-        return user_id
+    # Construct the URL to the KV store
+    kv_store_url = f"{KV_URL}/v1/namespaces/{KV_REST_API_URL}/values"
+
+    # Set up the headers with the read-only token
+    headers = {
+        "Authorization": f"Bearer {KV_REST_API_READ_ONLY_TOKEN}",
+    }
+
+    # Make the GET request to retrieve all data from the KV store
+    response = requests.get(kv_store_url, headers=headers)
+
+    if response.status_code == 200:
+        # Parse the response JSON to get all the keys and values in the KV store
+        kv_data = response.json().get('data', [])
+
+        # Loop through the data to find the user ID associated with the provided user token
+        for item in kv_data:
+            if item['value'] == user_token:
+                user_id = item['key']
+                return user_id
+
+        # If user token not found in the KV store, return None
+        return None
     else:
-        return False
+        app.logger.error("Error retrieving data from KV store:", response.status_code)
+        app.logger.error(response.text)
+        return None        
+        
+
+# def create_database():
+    # conn = sqlite3.connect('slack_tokens.db')
+    # cursor = conn.cursor()
+    # cursor.execute('''
+        # CREATE TABLE IF NOT EXISTS users (
+            # user_id TEXT PRIMARY KEY,
+            # token TEXT NOT NULL
+        # )
+    # ''')
+    # conn.commit()
+    # conn.close()
+
+# def get_user_token(user_id):
+    # # Retrieve the user token from the database based on the token
+    # conn = sqlite3.connect('slack_tokens.db')
+    # cursor = conn.cursor()
+    # cursor.execute('SELECT token FROM users WHERE user_id = ?', (user_id,))
+    # result = cursor.fetchone()
+    # conn.close()
+
+    # if result:
+        # user_token = result[0]
+        # return user_token
+    # else:
+        # return False
+        
+# def get_user_id(user_token):
+    # # Retrieve the user token from the database based on the token
+    # conn = sqlite3.connect('slack_tokens.db')
+    # cursor = conn.cursor()
+    # cursor.execute('SELECT user_id FROM users WHERE token = ?', (user_token,))
+    # result = cursor.fetchone()
+    # conn.close()
+
+    # if result:
+        # user_id = result[0]
+        # return user_id
+    # else:
+        # return False
 
 @app.route('/slackstatus', methods=['POST'])
 def parse_slack_status_update_request():
@@ -97,8 +176,8 @@ def parse_slack_status_update_request():
         return jsonify({"error": "Missing required data"}), 400
         
     # get user ID from token
-    slack_id=get_user_id(user_token)
-    if not slack_id:
+    slack_id=get_user_id_by_user_token(user_token)
+    if slack_id is None:
         return jsonify({"error": "Failed to decrypt user ID"}), 400
     update_slack_status(emoji, status_text, slack_id)
     # Return the response (make sure to include the CORS header in the response)
@@ -129,12 +208,13 @@ def update_slack_status(emoji, status_text, slack_id):
 @app.route('/')
 def hello_world():
     app.logger.info("Request received at /")
-    try:
-        create_database()
-    except Exception as e:
-        app.logger.error(e)
-    conn = sqlite3.connect('slack_tokens.db')
-    return str(conn)
+    # try:
+        # create_database()
+        # app.logger.info("database created")
+    # except Exception as e:
+        # app.logger.error(e)
+    # conn = sqlite3.connect('slack_tokens.db')
+    return "hey"
 
 
 
@@ -152,18 +232,19 @@ def slack_events():
     return ""
 
 def update_home_view (user_id, event=None):
-    user_token=get_user_token(user_id)
-    if not user_token:
+    user_token=get_user_token_by_user_id(user_id)
+    if user_token is None:
         app.logger.info("generate a new user token for user : " + str(user_id))
         cipher = Fernet(ENCRYPTION_KEY)
         encrypted_user_id = cipher.encrypt(user_id.encode())
         user_token = encrypted_user_id.decode()
         # Store the user ID and token in the database
-        conn = sqlite3.connect('slack_tokens.db')
-        cursor = conn.cursor()
-        cursor.execute('INSERT INTO users (user_id, user_token) VALUES (?, ?)', (user_id, user_token))
-        conn.commit()
-        conn.close()
+        # conn = sqlite3.connect('slack_tokens.db')
+        # cursor = conn.cursor()
+        # cursor.execute('INSERT INTO users (user_id, user_token) VALUES (?, ?)', (user_id, user_token))
+        # conn.commit()
+        # conn.close()
+        store_user_id_token_pair(user_id, user_token)
     
     view={
             "type": "home",
