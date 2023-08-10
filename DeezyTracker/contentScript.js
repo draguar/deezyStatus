@@ -88,9 +88,12 @@ function logCurrentTrack() {
       } else if (pauseButton) {
 		const favorite_status = isFavorite();
 		const emoji = favorite_status ? ":heart:" : ":musical_note:"; 
-		const status_text = "listening to" + (favorite_status?" favorite: ":": ") + track + " - " + artist
-        console.log('Status: Playing, favorite: '+isFavorite());
-		sendSlackStatus(emoji, status_text);
+		let status_text = "listening to" + (favorite_status?" favorite: ":": ") + track + " - " + artist
+		 if (status_text.length > 100) {
+			//Remove parenthesis if there are any
+			status_text = status_text.replace(/\([^)]*\)/g, '');
+		 }
+ 		sendSlackStatus(emoji, status_text);
       } else {
         console.log('Status: Unknown');
       }
@@ -125,4 +128,7 @@ function setupMutationObserver() {
 }
   
 setupMutationObserver();
+window.addEventListener("beforeunload", function () {
+	sendSlackStatus("","");
+});
 

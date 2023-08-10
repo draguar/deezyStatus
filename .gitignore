@@ -11,3 +11,6 @@ venv/
 ENV/ 
 env.bak/ 
 venv.bak/ 
+DeezyTracker.crx
+DeezyTracker.pem
+DeezyTracker.zip
