@@ -9,6 +9,7 @@ import sys
 import uuid
 from datetime import datetime
 from flask_cors import CORS
+import base64
 
 # Environment variables
 SLACK_CLIENT_ID = os.environ.get("SLACK_CLIENT_ID")
@@ -140,7 +141,7 @@ def update_home_view (user_id, user_info=None):
                         "type": "section",
                         "text": {
                             "type": "mrkdwn",
-                            "text": "To start using DeezyStatus, please click on the button below\n\n[![Add to slack](https://platform.slack-edge.com/img/add_to_slack.png)](https://slack.com/oauth/v2/authorize?client_id=442927849974.5669273267394&scope=users.profile:read&user_scope=users.profile:write)"
+                            "text": "To start using DeezyStatus, please click on the button below\n\n[![Add to slack](https://platform.slack-edge.com/img/add_to_slack.png)](https://slack.com/oauth/v2/authorize?client_id=442927849974.5669273267394&scope=users.profile:read&user_scope=users.profile:write&redirect_uri=https://deezy-status.vercel.app/slackoauth)"
                         }
                     }
                 ]
