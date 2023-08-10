@@ -134,18 +134,28 @@ def update_home_view (user_id, user_info=None):
     if user_info is None:
         # The user has not completed the OAuth workflow
         app.logger.info("Un-authentified user : " + str(user_id))
-        view={
-                "type": "home",
-                "blocks": [
-                    {
-                        "type": "section",
+        view = {
+            "type": "home",
+            "blocks": [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": "To start using DeezyStatus, please click the button below:"
+                    },
+                    "accessory": {
+                        "type": "button",
                         "text": {
-                            "type": "mrkdwn",
-                            "text": "To start using DeezyStatus, please click on the button below\n\n[![Add to slack](https://platform.slack-edge.com/img/add_to_slack.png)](https://slack.com/oauth/v2/authorize?client_id=442927849974.5669273267394&scope=users.profile:read&user_scope=users.profile:write&redirect_uri=https://deezy-status.vercel.app/slackoauth)"
-                        }
+                            "type": "plain_text",
+                            "text": "Add to Slack",
+                            "emoji": True
+                        },
+                        "url": "https://slack.com/oauth/v2/authorize?client_id=442927849974.5669273267394&scope=users.profile:read&user_scope=users.profile:write&redirect_uri=https://deezy-status.vercel.app/slackoauth",
+                        "style": "primary"
                     }
-                ]
-            }
+                }
+            ]
+        }
         slack_client = slack_app.client    
     else:
         # The user is OAuth-identified
@@ -157,7 +167,7 @@ def update_home_view (user_id, user_info=None):
                     "type": "section",
                     "text": {
                         "type": "mrkdwn",
-                        "text": "To use DeezyStatus, install firefox add-on [DeezyTracker](https://addons.mozilla.org/en-US/firefox/addon/deezytracker/). Once you set DeezyTracker up and play music in Deezer, it will send current track information to DeezyStatus in order to update you slack status.\n\nTo set up DeezyTracker, please copy paste your following user token: "+ user_info["uuid"]
+                        "text": "To use DeezyStatus, install firefox add-on <https://addons.mozilla.org/en-US/firefox/addon/deezytracker/|DeezyTracker>. Once you set DeezyTracker up and play music in Deezer, it will send current track information to DeezyStatus in order to update you slack status.\n\nTo set up DeezyTracker, please copy paste your following user token: `"+ user_info["uuid"]+"`"
                     }
                 }
             ]
