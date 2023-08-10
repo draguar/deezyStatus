@@ -103,7 +103,14 @@ def get_user_info(id_or_uuid):
     if response.status_code == 200:
         # Parse the response JSON to get the user token
         app.logger.info(response.text)
-        user_info = response.json().get('result')
+        try:
+            # Parse the response JSON to get the "result" value
+            result_value = response.json().get('result')
+            # Parse the "result" value as a JSON string to get a dictionary
+            user_info = json.loads(result_value)
+        except json.JSONDecodeError:
+            app.logger.error("Error decoding JSON data from the KV store.")
+            return None
         app.logger.info("returning info : " + str(type(user_info)) + " " +str(user_info) )
         return user_info
     else:
