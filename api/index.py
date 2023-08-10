@@ -82,7 +82,7 @@ def store_user_info(user_info):
     # Construct the URL to the KV store
     kv_opposite_url = f"{KV_REST_API_URL}/set/{user_info['uuid']}"
     # Make the POST request to store the data in the KV store
-    response = requests.post(kv_opposite_url, headers=headers, json=user_info))
+    response = requests.post(kv_opposite_url, headers=headers, json=user_info)
     if response.status_code == 200:
         app.logger.info("User uuid and user info stored successfully.")
     else:
