@@ -104,6 +104,7 @@ def get_user_info(id_or_uuid):
         # Parse the response JSON to get the user token
         app.logger.info(response.text)
         user_info = response.json().get('result')
+        app.logger.info("returning info : " + str(type(user_info)) + " " +str(user_info) )
         return user_info
     else:
         app.logger.error("Error retrieving user value: status" + str(response.status_code))
