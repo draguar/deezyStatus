@@ -158,7 +158,7 @@ def update_home_view (user_id, user_info=None):
                             "text": "Add to Slack",
                             "emoji": True
                         },
-                        "url": "https://slack.com/oauth/v2/authorize?client_id=442927849974.5669273267394&scope=users.profile:read&user_scope=users.profile:write&redirect_uri=https://deezy-status.vercel.app/slackoauth",
+                        "url": "https://slack.com/oauth/v2/authorize?client_id="+SLACK_CLIENT_ID+"&scope=users.profile:read&user_scope=users.profile:write&redirect_uri=https://deezy-status.vercel.app/slackoauth",
                         "style": "primary"
                     }
                 }
