@@ -12,8 +12,8 @@ from flask_cors import CORS
 import base64
 
 # Environment variables
-SLACK_CLIENT_ID = os.environ.get("SLACK_CLIENT_ID")
-SLACK_CLIENT_SECRET = os.environ.get("SLACK_CLIENT_SECRET")
+SLACK_CLIENT_ID = os.environ.get("SLACK_ID")
+SLACK_CLIENT_SECRET = os.environ.get("SLACK_SECRET")
 PROJECT_URI  = os.environ.get("PROJECT_URI")
 KV_URL=os.environ.get("KV_URL")
 KV_REST_API_URL=os.environ.get("KV_REST_API_URL")
