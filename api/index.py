@@ -120,7 +120,7 @@ def slack_events():
         app.logger.info(request.json)
         event_type = request.json["event"]["type"]
         if (event_type=="app_home_opened"):
-            handle_app_home_opened(request["event"])
+            handle_app_home_opened(request.json["event"])
         else:
             app.logger.warning("unhandled event type.")
     return ""
