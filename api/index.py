@@ -1,8 +1,6 @@
 from flask import Flask, redirect, request, jsonify
 import os
 import requests, json
-from slack_bolt import App
-from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 import logging
 import sys
@@ -24,13 +22,6 @@ KV_REST_API_READ_ONLY_TOKEN=os.environ.get("KV_REST_API_READ_ONLY_TOKEN")
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 CORS(app, resources={r"/slackstatus": {"origins": "https://www.deezer.com"}})
-
-slack_app = App(
-    logger=app.logger,
-    signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
-    process_before_response=True
-)
-slack_request_handler = SlackRequestHandler(app=slack_app)
 
 # --------------------------------------------------------
 # Slack app installation OAuth workflow
@@ -126,12 +117,12 @@ def slack_events():
     if "challenge" in request.json:
         return jsonify({"challenge": request.json["challenge"]})
     else:
-        slack_request_handler.handle(request)
+        app.logger.info(request.json)
     return ""
 # --------------------------------------------------------
 # Slack app Home tab
 # --------------------------------------------------------
-@slack_app.event("app_home_opened")
+#@slack_app.event("app_home_opened")
 def handle_app_home_opened(event, client, logger):
     user_id = event["user"]
     update_home_view (user_id)
