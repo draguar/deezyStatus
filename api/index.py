@@ -118,12 +118,17 @@ def slack_events():
         return jsonify({"challenge": request.json["challenge"]})
     else:
         app.logger.info(request.json)
+        event_type = request.json["event"]["type"]
+        if (event_type=="app_home_opened"):
+            handle_app_home_opened(request["event"])
+        else:
+            app.logger.warning("unhandled event type.")
     return ""
 # --------------------------------------------------------
 # Slack app Home tab
 # --------------------------------------------------------
 #@slack_app.event("app_home_opened")
-def handle_app_home_opened(event, client, logger):
+def handle_app_home_opened(event):
     user_id = event["user"]
     update_home_view (user_id)
 
@@ -155,7 +160,7 @@ def update_home_view (user_id, user_info=None):
                 }
             ]
         }
-        slack_client = slack_app.client    
+        raise RuntimeError("Un-authentified user should not be able to open home tab.")   
     else:
         # The user is OAuth-identified
         app.logger.info("authentified user : " + str(user_id))
