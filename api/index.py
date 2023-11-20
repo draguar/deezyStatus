@@ -254,8 +254,8 @@ def update_slack_status(emoji, status_text, slack_info):
 # --------------------------------------------------------
 @app.route('/')
 def homepage():
-    return send_from_directory(os.path.join(STATIC_PATH, 'index.html')
+    return send_from_directory(os.path.join(STATIC_PATH, 'index.html'))
     
 @app.route('/privacy')
 def privacy_policy():
-    return send_from_directory(os.path.join(STATIC_PATH, 'privacy.html')
+    return send_from_directory(os.path.join(STATIC_PATH, 'privacy.html'))
