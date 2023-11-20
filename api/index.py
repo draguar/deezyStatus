@@ -1,4 +1,4 @@
-from flask import Flask, redirect, request, jsonify, render_template
+from flask import Flask, redirect, request, jsonify, current_app
 import os
 import requests, json
 from slack_sdk import WebClient
@@ -250,4 +250,4 @@ def update_slack_status(emoji, status_text, slack_info):
 
 @app.route('/')
 def hello_world():
-    return render_template('homepage.html')
+    return current_app.send_static_file('homepage.html')
