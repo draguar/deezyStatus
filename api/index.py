@@ -1,4 +1,4 @@
-from flask import Flask, redirect, request, jsonify, current_app
+from flask import Flask, redirect, request, jsonify, send_from_directory
 import os
 import requests, json
 from slack_sdk import WebClient
@@ -250,4 +250,5 @@ def update_slack_status(emoji, status_text, slack_info):
 
 @app.route('/')
 def hello_world():
-    return current_app.send_static_file('homepage.html')
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    return send_from_directory(os.path.join(root_dir, 'static'), 'index.html')
