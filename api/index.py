@@ -250,4 +250,4 @@ def update_slack_status(emoji, status_text, slack_info):
 
 @app.route('/')
 def hello_world():
-    return "This is DeezyStatus"
+    return render_template('index.html')
