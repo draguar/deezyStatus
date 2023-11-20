@@ -2,20 +2,19 @@
 
 <img src="https://avatars.slack-edge.com/2023-08-01/5681931981089_dc2b11a4ed20fd33ef7c_512.png" alt="DeezyStatus Logo" width="100">
 
-[DeezyStatus](https://your-deezystatus-website-url.com) is a slack app that lets users automatically synchronize their Slack status with the track they're listening to on Deezer!
+[DeezyStatus](https://deezy-status.vercel.app/) is a slack app that lets users automatically synchronize their Slack status with the track they're listening to on Deezer!
 
 ## Installation
 
-To integrate DeezyStatus with your Slack workspace:
-
-1. Click the following button to add DeezyStatus to your Slack workspace:
-   [![Add to Slack](https://platform.slack-edge.com/img/add_to_slack.png)](https://slack.com/oauth/v2/authorize?client_id=442927849974.5669273267394&scope=users.profile:read,chat:write&user_scope=users.profile:write)
-
-2. Install the Firefox add-on [DeezyTracker](https://addons.mozilla.org/en-US/firefox/addon/deezytracker/)..
+If you wish to use DeezyStatus, you can find installation and set up instructions on [DeezyStatus official page](https://deezy-status.vercel.app/).
    
 ## How it Works
 
-Once you've set up DeezyTracker and play music in Deezer, it will send the current track information to DeezyStatus. This information will then update your Slack status automatically.
+DeezyStatus is dependant on the firefox addon [DeezyTracker](https://addons.mozilla.org/en-US/firefox/addon/deezytracker/), which code you will find in `DeezyTracker` directory.
+
+DeezyTracker contains a content script checking for what the user is listening to on Deezer, and sending the information to DeezyStatus Slack app.
+
+The code for the slack app is available in the `api` directory. After the insallation OAuth2 workflow, the app gives the user a token to submit in DeezyTracker in order to identify them. When DeezyTracker sends currently listened track information, DeezyStatus updates the user status. 
 
 ## License
 
