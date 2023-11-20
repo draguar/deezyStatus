@@ -253,9 +253,9 @@ def update_slack_status(emoji, status_text, slack_info):
 # Static website
 # --------------------------------------------------------
 @app.route('/')
-def hello_world():
+def homepage():
     return send_from_directory(os.path.join(STATIC_PATH, 'index.html')
     
 @app.route('/privacy')
-def hello_world():
+def privacy_policy():
     return send_from_directory(os.path.join(STATIC_PATH, 'privacy.html')
