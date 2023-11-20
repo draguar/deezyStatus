@@ -61,13 +61,12 @@ def send_welcome_message(user_info):
             channel=user_info["id"], 
             text="Welcome and thanks for installing DeezyStatus. To start using it, install firefox add-on <https://addons.mozilla.org/en-US/firefox/addon/deezytracker/|DeezyTracker>. Once you set DeezyTracker up and play music in Deezer, it will send current track information to DeezyStatus in order to update you slack status.\n\nTo set up DeezyTracker, please copy paste your following user token: `"+ user_info["uuid"]+"`"
         )
-        logger.info(result)
         if response["ok"]:
             app.logger.info("Successfully sent welcome message.")
         else:
             app.logger.error("Failed to send welcome message : "+response.text)
     except SlackApiError as e:
-        logger.error(f"Error posting message: {e}")
+        app.logger.error(f"Error posting message: {e}")
     
 # --------------------------------------------------------
 # KV store manipulation
