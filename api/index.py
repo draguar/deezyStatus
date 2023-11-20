@@ -17,6 +17,7 @@ KV_URL=os.environ.get("KV_URL")
 KV_REST_API_URL=os.environ.get("KV_REST_API_URL")
 KV_REST_API_TOKEN=os.environ.get("KV_REST_API_TOKEN")
 KV_REST_API_READ_ONLY_TOKEN=os.environ.get("KV_REST_API_READ_ONLY_TOKEN")
+STATIC_PATH = os.path.dirname(os.path.abspath(__file__), 'static')
 
 # Initializes Flask app and slack app
 app = Flask(__name__)
@@ -248,7 +249,13 @@ def update_slack_status(emoji, status_text, slack_info):
     except slack_sdk.errors.SlackApiError as e:
         print(f"Error updating Slack status: {e}")
 
+# --------------------------------------------------------
+# Static website
+# --------------------------------------------------------
 @app.route('/')
 def hello_world():
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    return send_from_directory(os.path.join(root_dir, 'static'), 'index.html')
+    return send_from_directory(os.path.join(STATIC_PATH, 'index.html')
+    
+@app.route('/privacy')
+def hello_world():
+    return send_from_directory(os.path.join(STATIC_PATH, 'privacy.html')
