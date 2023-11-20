@@ -1,8 +1,6 @@
-from flask import Flask, redirect, request, jsonify
+from flask import Flask, redirect, request, jsonify, send_from_directory
 import os
 import requests, json
-from slack_bolt import App
-from slack_bolt.adapter.flask import SlackRequestHandler
 from slack_sdk import WebClient
 import logging
 import sys
@@ -19,18 +17,12 @@ KV_URL=os.environ.get("KV_URL")
 KV_REST_API_URL=os.environ.get("KV_REST_API_URL")
 KV_REST_API_TOKEN=os.environ.get("KV_REST_API_TOKEN")
 KV_REST_API_READ_ONLY_TOKEN=os.environ.get("KV_REST_API_READ_ONLY_TOKEN")
+STATIC_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 
 # Initializes Flask app and slack app
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 CORS(app, resources={r"/slackstatus": {"origins": "https://www.deezer.com"}})
-
-slack_app = App(
-    logger=app.logger,
-    signing_secret=os.environ.get("SLACK_SIGNING_SECRET"),
-    process_before_response=True
-)
-slack_request_handler = SlackRequestHandler(app=slack_app)
 
 # --------------------------------------------------------
 # Slack app installation OAuth workflow
@@ -55,12 +47,28 @@ def slack_oauth():
         # Store user information
         user_info = {"id": user_id, "user_token": user_token, "bot_token":bot_token, "uuid":str(uuid.uuid4())}
         store_user_info(user_info)
+        send_welcome_message(user_info)
         # Redirect the user to a thank you page or their profile, etc.
         return "Authentification successful, you can close this tab and return to slack"
     else:
         # Handle the error case
         return "Authentification failed"
         
+def send_welcome_message(user_info):
+    slack_client = WebClient(token = user_info["bot_token"])
+    try:
+        # Call the chat.postMessage method using the WebClient
+        response = slack_client.chat_postMessage(
+            channel=user_info["id"], 
+            text="Welcome and thanks for installing DeezyStatus. To start using it, install firefox add-on <https://addons.mozilla.org/en-US/firefox/addon/deezytracker/|DeezyTracker>. Once you set DeezyTracker up and play music in Deezer, it will send current track information to DeezyStatus in order to update you slack status.\n\nTo set up DeezyTracker, please copy paste your following user token: `"+ user_info["uuid"]+"`"
+        )
+        if response["ok"]:
+            app.logger.info("Successfully sent welcome message.")
+        else:
+            app.logger.error("Failed to send welcome message : "+response.text)
+    except SlackApiError as e:
+        app.logger.error(f"Error posting message: {e}")
+    
 # --------------------------------------------------------
 # KV store manipulation
 # --------------------------------------------------------
@@ -126,13 +134,17 @@ def slack_events():
     if "challenge" in request.json:
         return jsonify({"challenge": request.json["challenge"]})
     else:
-        slack_request_handler.handle(request)
+        app.logger.info(request.json)
+        event_type = request.json["event"]["type"]
+        if (event_type=="app_home_opened"):
+            handle_app_home_opened(request.json["event"])
+        else:
+            app.logger.warning("unhandled event type.")
     return ""
 # --------------------------------------------------------
 # Slack app Home tab
 # --------------------------------------------------------
-@slack_app.event("app_home_opened")
-def handle_app_home_opened(event, client, logger):
+def handle_app_home_opened(event):
     user_id = event["user"]
     update_home_view (user_id)
 
@@ -164,7 +176,7 @@ def update_home_view (user_id, user_info=None):
                 }
             ]
         }
-        slack_client = slack_app.client    
+        raise RuntimeError("Un-authentified user should not be able to open home tab.")   
     else:
         # The user is OAuth-identified
         app.logger.info("authentified user : " + str(user_id))
@@ -194,7 +206,6 @@ def update_home_view (user_id, user_info=None):
             app.logger.error("Failed to publish the app home view : "+response.text)
     except Exception as e:
         app.logger.error(f"Error publishing the app home view: {str(e)}")
-
 # --------------------------------------------------------
 # Slack status update
 # --------------------------------------------------------
@@ -238,6 +249,13 @@ def update_slack_status(emoji, status_text, slack_info):
     except slack_sdk.errors.SlackApiError as e:
         print(f"Error updating Slack status: {e}")
 
+# --------------------------------------------------------
+# Static website
+# --------------------------------------------------------
 @app.route('/')
-def hello_world():
-    return "This is DeezyStatus"
+def homepage():
+    return send_from_directory(STATIC_PATH, 'index.html')
+    
+@app.route('/privacy')
+def privacy_policy():
+    return send_from_directory(STATIC_PATH, 'privacy.html')

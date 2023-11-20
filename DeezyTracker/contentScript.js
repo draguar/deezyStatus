@@ -4,19 +4,14 @@ let lastEmoji = '';
 let lastStatusText = '';
 
 function isFavorite(){
-	const trackActions = document.querySelector(".track-actions");
-	if (trackActions) {
-		const addToFavButton = trackActions.querySelector("svg[data-testid='HeartIcon']");
-		const removeFromFavButton = trackActions.querySelector("svg[data-testid='HeartFillIcon']");
-		if (addToFavButton) {
-		  console.log('Not favorite');
-		  return false;
-		} else if (removeFromFavButton) {
-		  console.log('Currently favorite');
-		  return true;
-		}
-    } else {
-		console.log('no trackActions');
+	const addToFavButton = document.querySelector('#page_player>div>div>div>div>[data-testid="add_to_favorite_button_off"]');
+	const removeFromFavButton = document.querySelector('#page_player>div>div>div>div>[data-testid="add_to_favorite_button_on"]');
+	if (addToFavButton) {
+	  console.log('Not favorite');
+	  return false;
+	} else if (removeFromFavButton) {
+	  console.log('Currently favorite');
+	  return true;
 	}
 	throw new Error('Cannot detect if favorite or not');
 }
@@ -70,44 +65,42 @@ function sendSlackStatus(emoji, status_text) {
 
 // Helper function to log the current track information
 function logCurrentTrack() {
-  const trackContainer = document.querySelector('.track-container');
-  if (trackContainer) {
-    const marqueeContent = trackContainer.querySelector('.marquee-content');
-    if (marqueeContent) {
-      const trackInfo = marqueeContent.textContent.trim();
-      const [track, artist] = trackInfo.split(' · ');
-      console.log('Current Track:', track);
-      console.log('Artist:', artist);
-	  
-	  const playButton = document.querySelector('.svg-icon-group-btn > svg[data-testid="PlayIcon"]');
-	  const pauseButton = document.querySelector('.svg-icon-group-btn > svg[data-testid="PauseIcon"]');
-
-	  if (playButton) {
-        console.log('Status: Paused');
-		sendSlackStatus("", "");
-      } else if (pauseButton) {
-		const favorite_status = isFavorite();
-		const emoji = favorite_status ? ":heart:" : ":musical_note:"; 
-		let status_text = "listening to" + (favorite_status?" favorite: ":": ") + track + " - " + artist
-		 if (status_text.length > 100) {
-			//Remove parenthesis if there are any
-			status_text = status_text.replace(/\([^)]*\)/g, '');
-		 }
- 		sendSlackStatus(emoji, status_text);
-      } else {
-        console.log('Status: Unknown');
-      }
-    } else {
-		console.log('no marquee content');
-	}
+  //Look for track title and artist name
+  const title_tag = document.querySelector('[data-testid="item_title"]>a');
+  if(title_tag){
+	track_title=title_tag.innerHTML;
   } else {
-	  console.log('no track container');
+	console.log('no track title');
+  }
+  const artist_tag = document.querySelector('[data-testid="item_subtitle"]>a');
+  if(artist_tag){
+	track_artist=artist_tag.innerHTML;
+  } else {
+	console.log('no track artist');
+  }
+  // Check status playing/paused
+  const playButton = document.querySelector('#page_player [data-testid="play_button_play"]');
+  const pauseButton = document.querySelector('#page_player [data-testid="play_button_pause"]');
+  if (playButton) {
+	console.log('Status: Paused');
+	sendSlackStatus("", "");
+  } else if (pauseButton) {
+	const favorite_status = isFavorite();
+	const emoji = favorite_status ? ":heart:" : ":musical_note:"; 
+	let status_text = "listening to" + (favorite_status?" favorite: ":": ") + track_title + " - " + track_artist
+	 if (status_text.length > 100) {
+		//Remove parenthesis if there are any
+		status_text = status_text.replace(/\([^)]*\)/g, '');
+	 }
+	sendSlackStatus(emoji, status_text);
+  } else {
+	console.log('Status: Unknown');
   }
 }
 
 function setupMutationObserver() {
   // Set up a mutation observer to detect DOM changes
-  const playerBottom = document.querySelector('.player-bottom');
+  const playerBottom = document.querySelector('#page_player');
   if (playerBottom) {
     const observer = new MutationObserver(() => {
       // Call getCurrentTrack whenever a DOM change is observed in player-bottom

@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "DeezyTracker",
-  "version": "1.1",
+  "version": "1.2",
   "description": "Track your Deezer music to use the DeezyStatus Slack App",
   "permissions": [
     "storage",
