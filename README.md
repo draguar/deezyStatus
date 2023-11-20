@@ -1,8 +1,8 @@
 # DeezyStatus - Sync Your Slack Status with Deezer
 
-[DeezyStatus](https://your-deezystatus-website-url.com) is a slack app that lets users automatically synchronize their Slack status with the track they're listening to on Deezer!
+<img src="https://avatars.slack-edge.com/2023-08-01/5681931981089_dc2b11a4ed20fd33ef7c_512.png" alt="DeezyStatus Logo" width="100">
 
-![DeezyStatus Logo](https://avatars.slack-edge.com/2023-08-01/5681931981089_dc2b11a4ed20fd33ef7c_512.png)
+[DeezyStatus](https://your-deezystatus-website-url.com) is a slack app that lets users automatically synchronize their Slack status with the track they're listening to on Deezer!
 
 ## Installation
 
