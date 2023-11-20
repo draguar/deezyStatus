@@ -1,28 +1,44 @@
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fpython%2Fflask&demo-title=Flask%20%2B%20Vercel&demo-description=Use%20Flask%202%20on%20Vercel%20with%20Serverless%20Functions%20using%20the%20Python%20Runtime.&demo-url=https%3A%2F%2Fflask-python-template.vercel.app%2F&demo-image=https://assets.vercel.com/image/upload/v1669994156/random/flask.png)
+# DeezyStatus - Sync Your Slack Status with Deezer
 
-# Flask + Vercel
+[DeezyStatus](https://your-deezystatus-website-url.com) is a slack app that lets users automatically synchronize their Slack status with the track they're listening to on Deezer!
 
-This example shows how to use Flask 2 on Vercel with Serverless Functions using the [Python Runtime](https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/python).
+![DeezyStatus Logo](https://avatars.slack-edge.com/2023-08-01/5681931981089_dc2b11a4ed20fd33ef7c_512.png)
 
-## Demo
+## Installation
 
-https://flask-python-template.vercel.app/
+To integrate DeezyStatus with your Slack workspace:
 
+1. Click the following button to add DeezyStatus to your Slack workspace:
+   [![Add to Slack](https://platform.slack-edge.com/img/add_to_slack.png)](https://slack.com/oauth/v2/authorize?client_id=442927849974.5669273267394&scope=users.profile:read,chat:write&user_scope=users.profile:write)
+
+2. Install the Firefox add-on [DeezyTracker](https://addons.mozilla.org/en-US/firefox/addon/deezytracker/)..
+   
 ## How it Works
 
-This example uses the Web Server Gateway Interface (WSGI) with Flask to enable handling requests on Vercel with Serverless Functions.
+Once you've set up DeezyTracker and play music in Deezer, it will send the current track information to DeezyStatus. This information will then update your Slack status automatically.
 
-## Running Locally
+## License
 
-```bash
-npm i -g vercel
-vercel dev
-```
+DeezyStatus - Sync Your Slack Status with Deezer
+    Copyright (C) 2023  Guillaume Vanel
 
-Your Flask application is now available at `http://localhost:3000`.
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-## One-Click Deploy
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-Deploy the example using [Vercel](https://vercel.com?utm_source=github&utm_medium=readme&utm_campaign=vercel-examples):
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fexamples%2Ftree%2Fmain%2Fpython%2Fflask&demo-title=Flask%20%2B%20Vercel&demo-description=Use%20Flask%202%20on%20Vercel%20with%20Serverless%20Functions%20using%20the%20Python%20Runtime.&demo-url=https%3A%2F%2Fflask-python-template.vercel.app%2F&demo-image=https://assets.vercel.com/image/upload/v1669994156/random/flask.png)
+## Feedback
+
+DeezyStatus is an in-progress app, and we'd love to hear from you! If you have any feedback, suggestions, or issues, feel free to reach out or open an issue in this repository.
+
+## Contributing
+
+We welcome contributions! If you'd like to contribute to DeezyStatus, please fork this repository and create a pull request.
