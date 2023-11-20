@@ -46,12 +46,29 @@ def slack_oauth():
         # Store user information
         user_info = {"id": user_id, "user_token": user_token, "bot_token":bot_token, "uuid":str(uuid.uuid4())}
         store_user_info(user_info)
+        send_welcome_message(user_info)
         # Redirect the user to a thank you page or their profile, etc.
         return "Authentification successful, you can close this tab and return to slack"
     else:
         # Handle the error case
         return "Authentification failed"
         
+def send_welcome_message(user_info):
+    slack_client = WebClient(token = user_info["bot_token"])
+    try:
+        # Call the chat.postMessage method using the WebClient
+        response = slack_client.chat_postMessage(
+            channel=user_info["id"], 
+            text="Welcome and thanks for installing DeezyStatus. To start using it, install firefox add-on <https://addons.mozilla.org/en-US/firefox/addon/deezytracker/|DeezyTracker>. Once you set DeezyTracker up and play music in Deezer, it will send current track information to DeezyStatus in order to update you slack status.\n\nTo set up DeezyTracker, please copy paste your following user token: `"+ user_info["uuid"]+"`"
+        )
+        logger.info(result)
+        if response["ok"]:
+            app.logger.info("Successfully sent welcome message.")
+        else:
+            app.logger.error("Failed to send welcome message : "+response.text)
+    except SlackApiError as e:
+        logger.error(f"Error posting message: {e}")
+    
 # --------------------------------------------------------
 # KV store manipulation
 # --------------------------------------------------------
@@ -127,7 +144,6 @@ def slack_events():
 # --------------------------------------------------------
 # Slack app Home tab
 # --------------------------------------------------------
-#@slack_app.event("app_home_opened")
 def handle_app_home_opened(event):
     user_id = event["user"]
     update_home_view (user_id)
@@ -190,7 +206,6 @@ def update_home_view (user_id, user_info=None):
             app.logger.error("Failed to publish the app home view : "+response.text)
     except Exception as e:
         app.logger.error(f"Error publishing the app home view: {str(e)}")
-
 # --------------------------------------------------------
 # Slack status update
 # --------------------------------------------------------

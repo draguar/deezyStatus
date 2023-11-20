@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DeezyTracker",
-  "version": "1.0",
+  "version": "1.2",
   "description": "Track your Deezer music to use the DeezyStatus Slack App",
   "browser_specific_settings": {
 	  "gecko": {
